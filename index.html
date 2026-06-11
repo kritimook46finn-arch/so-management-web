@@ -358,14 +358,32 @@ a:hover{text-decoration:underline}
 <!-- LOGIN MODAL -->
 <div class="modal-overlay open" id="m-login" style="background:rgba(0,0,0,.55)">
   <div class="modal-box" style="max-width:400px">
-    <div class="modal-head">
-      <div>
-        <div class="modal-head-title">INS Sale Order</div>
-        <div class="modal-head-sub">เลือกบทบาทเพื่อเข้าระบบ</div>
+    <div class="modal-head" style="justify-content:center;flex-direction:column;align-items:center;gap:10px;padding:28px 24px 20px">
+      <div class="brand-icon" style="width:48px;height:48px;border-radius:14px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      <div style="text-align:center">
+        <div class="modal-head-title" style="font-size:20px">INS Sale Order</div>
+        <div class="modal-head-sub" style="margin-top:4px">Innovative Natural Solutions</div>
       </div>
-      <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
     </div>
-    <div class="modal-scroll" id="m-login-body"></div>
+    <div class="modal-scroll" id="m-login-body">
+      <div style="display:flex;flex-direction:column;gap:12px;padding-bottom:8px">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="login-email" type="email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div style="position:relative">
+            <input id="login-pass" type="password" placeholder="••••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLoginEmail()">
+            <button onclick="togglePassVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px" id="pass-vis-btn">👁</button>
+          </div>
+        </div>
+        <div id="login-err" style="font-size:12px;color:var(--red);min-height:16px"></div>
+        <button class="btn btn-primary" onclick="doLoginEmail()" style="width:100%;justify-content:center;font-size:15px;padding:12px">
+          เข้าสู่ระบบ
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -557,12 +575,15 @@ let ORDERS=[
 ];
 let runNo=491;
 
-const ROLES={
-  sale:{label:'เซลล์',name:'kaewalee.kh'},
-  backend:{label:'หลังบ้าน SO',name:'admin.ins'},
-  warehouse:{label:'คลัง',name:'warehouse.ins'},
+// users: email → display name
+const USERS={
+  'kaewalee.kh@ins.co.th':'kaewalee.kh',
+  'admin@ins.co.th':'admin.ins',
+  'warehouse@ins.co.th':'warehouse.ins',
 };
-let role=null,view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='';
+const LOGIN_PASS='insorder2026';
+const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
+let role=null,userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='';
 
 // ── HELPERS ───────────────────────────────────
 const fmt=n=>(+n||0).toLocaleString('th-TH');
@@ -590,7 +611,7 @@ function icon(n){
     edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
     truck:'<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
   };
-  return`<svg viewBox="0 0 24 24">${m[n]||''}</svg>`;
+  return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${m[n]||''}</svg>`;
 }
 
 function pipe(o){
@@ -608,53 +629,67 @@ function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 
 // ── LOGIN ─────────────────────────────────────
-function doLogin(r){
-  role=r;
+function togglePassVis(){
+  const inp=document.getElementById('login-pass');
+  const btn=document.getElementById('pass-vis-btn');
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+  else{inp.type='password';btn.textContent='👁';}
+}
+function doLoginEmail(){
+  const email=(document.getElementById('login-email').value||'').trim().toLowerCase();
+  const pass=(document.getElementById('login-pass').value||'').trim();
+  const err=document.getElementById('login-err');
+  if(!email){err.textContent='กรุณากรอก Email';return;}
+  if(pass!==LOGIN_PASS){err.textContent='Password ไม่ถูกต้อง';return;}
+  if(!USERS[email]){err.textContent='ไม่พบ Email นี้ในระบบ';return;}
+  err.textContent='';
+  userEmail=email;
+  userName=USERS[email];
+  role='staff';
+  // remember: บันทึก email ใน localStorage
+  try{localStorage.setItem('ins_user_email',email);}catch(e){}
   document.getElementById('m-login').classList.remove('open');
   renderShell();
-  nav('dashboard');
-  toast('ยินดีต้อนรับ '+ROLES[r].label,'ok');
+  nav('orders');
+  toast('ยินดีต้อนรับ '+email,'ok');
 }
 function doLogout(){
-  role=null;
+  role=null;userEmail='';userName='';
+  try{localStorage.removeItem('ins_user_email');}catch(e){}
   document.getElementById('m-login').classList.add('open');
+  // clear fields
+  const em=document.getElementById('login-email');
+  const ps=document.getElementById('login-pass');
+  if(em)em.value='';if(ps)ps.value='';
 }
-
-// inject login buttons with addEventListener (no inline onclick)
+// auto-login จาก localStorage
 (function(){
-  const body=document.getElementById('m-login-body');
-  body.innerHTML='<div style="padding:4px 0 20px;display:flex;flex-direction:column;gap:10px" id="login-btn-list"></div>';
-  const list=document.getElementById('login-btn-list');
-  Object.entries(ROLES).forEach(([k,v])=>{
-    const btn=document.createElement('button');
-    btn.style.cssText='display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:#fff;text-align:left;cursor:pointer;transition:all .12s;width:100%;font-family:inherit';
-    btn.innerHTML=`
-      <div style="width:38px;height:38px;border-radius:10px;background:var(--green-soft);display:grid;place-items:center;flex-shrink:0">${icon('list')}</div>
-      <div><div style="font-size:14px;font-weight:700;color:var(--text)">${v.label}</div><div style="font-size:12px;color:var(--text3);margin-top:2px">${v.name}@ins.co.th</div></div>
-      <div style="margin-left:auto;color:var(--text3);font-size:18px">›</div>`;
-    btn.addEventListener('mouseover',()=>btn.style.borderColor='var(--green)');
-    btn.addEventListener('mouseout',()=>btn.style.borderColor='var(--border)');
-    btn.addEventListener('click',()=>doLogin(k));
-    list.appendChild(btn);
-  });
+  try{
+    const saved=localStorage.getItem('ins_user_email');
+    if(saved&&USERS[saved]){
+      userEmail=saved;userName=USERS[saved];role='staff';
+      document.getElementById('m-login').classList.remove('open');
+      setTimeout(()=>{renderShell();nav('orders');},0);
+    }
+  }catch(e){}
 })();
 
 // ── SHELL ─────────────────────────────────────
 function renderShell(){
   const pending=ORDERS.filter(o=>!o.soOpened).length;
   const items=[
-    {k:'dashboard',l:'ภาพรวม',i:'pulse'},
     {k:'orders',l:'รายการออเดอร์',i:'list'},
-    ...(role==='sale'?[{k:'new-order',l:'สร้างออเดอร์ใหม่',i:'plus'},{k:'products',l:'รายการสินค้า',i:'box'}]:[]),
-    ...(role==='backend'?[{k:'so-manage',l:'จัดการ SO',i:'doc',badge:pending||''}]:[]),
-    ...(role==='warehouse'?[{k:'warehouse',l:'สถานะคลัง',i:'warehouse'}]:[]),
+    {k:'new-order',l:'สร้างออเดอร์',i:'plus'},
+    {k:'so-manage',l:'จัดการ SO',i:'doc',badge:pending||''},
+    {k:'warehouse',l:'สถานะคลัง',i:'warehouse'},
+    {k:'products',l:'รายการสินค้า',i:'box'},
   ];
   document.getElementById('sidebar').innerHTML=`
   <div class="sidebar-brand">
     <div class="brand-icon">${icon('pulse')}</div>
     <div><div class="brand-name">INS SaleOrder</div><div class="brand-sub">Innovative Natural Solutions</div></div>
   </div>
-  <div class="sidebar-role"><strong>${ROLES[role].label}</strong><span>${ROLES[role].name}@ins.co.th</span></div>
+  <div class="sidebar-role"><strong>INS Staff</strong><span>${userEmail||userName}</span></div>
   <nav class="sidebar-nav">
     <div class="nav-section">เมนู</div>
     ${items.map(x=>`<button class="nav-btn" id="nb-${x.k}" onclick="nav('${x.k}')">${icon(x.i)}${x.l}${x.badge?`<span class="nav-badge">${x.badge}</span>`:''}</button>`).join('')}
@@ -673,8 +708,8 @@ function nav(v){
 function handleSearch(q){sq=q.toLowerCase();if(['orders','so-manage','warehouse','products'].includes(view))render(false);}
 function render(sc=true){
   if(sc)document.getElementById('content').scrollTop=0;
-  document.getElementById('topbar-title').textContent={dashboard:'ภาพรวม',orders:'รายการออเดอร์','new-order':'สร้างออเดอร์ใหม่',products:'รายการสินค้า','so-manage':'จัดการ SO',warehouse:'สถานะคลัง'}[view]||'';
-  ({dashboard:vDash,orders:vOrders,'new-order':vNew,products:vProds,'so-manage':vSO,warehouse:vWH}[view]||vDash)();
+  document.getElementById('topbar-title').textContent={orders:'รายการออเดอร์','new-order':'สร้างออเดอร์',products:'รายการสินค้า','so-manage':'จัดการ SO',warehouse:'สถานะคลัง'}[view]||'';
+  ({orders:vOrders,'new-order':vNew,products:vProds,'so-manage':vSO,warehouse:vWH}[view]||vOrders)();
 }
 
 // ── VIEWS ─────────────────────────────────────
@@ -744,26 +779,27 @@ function vOrders(){
   <table class="order-table" style="min-width:860px;table-layout:fixed;width:100%">
   <colgroup>
     <col style="width:58px"><col style="width:88px"><col style="width:56px">
-    <col style="width:auto"><col style="width:200px">
-    <col style="width:88px"><col style="width:130px"><col style="width:88px">
+    <col style="width:140px"><col style="width:200px">
+    <col style="width:88px"><col style="width:120px"><col style="width:82px"><col style="width:36px">
   </colgroup>
   <thead><tr>
     <th>No.</th><th>วันที่</th><th>Sale</th><th>ลูกค้า</th>
-    <th>Pipeline</th><th>ชำระ</th><th>SO</th><th style="text-align:right">ยอด</th>
+    <th>Pipeline</th><th>ชำระ</th><th>SO</th><th style="text-align:right">ยอด</th><th></th>
   </tr></thead>
-  <tbody>${list.length===0?`<tr><td colspan="8"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`:
+  <tbody>${list.length===0?`<tr><td colspan="9"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`:
   list.map(o=>`<tr onclick="showOrder(${o.no})">
     <td><span class="order-no">${o.no}</span></td>
     <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
     <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
     <td>
-      <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
+      <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px" title="${o.cust.replace(/^[A-Z]\d+ /,'')}">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
       <div style="font-size:10px;color:var(--text3)">${o.cust.match(/^[A-Z]\d+/)?.[0]||''}</div>
     </td>
     <td style="white-space:nowrap;padding-right:6px">${pipe(o)}</td>
     <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
     <td><span style="font-family:var(--mono);font-size:11px;color:${o.soOpened?'var(--green)':'var(--text3)'};overflow:hidden;text-overflow:ellipsis;display:block;white-space:nowrap">${o.soNo||'—'}</span></td>
     <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
+    <td><button class="btn btn-danger btn-sm" style="padding:4px 8px;min-width:28px" title="ลบออเดอร์" onclick="event.stopPropagation();deleteOrder(${o.no})">✕</button></td>
   </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -771,7 +807,7 @@ function vOrders(){
 function showOrder(no){
   const o=ORDERS.find(x=>x.no===no);if(!o)return;
   const total=tot(o);
-  const canSO=role==='backend', canWH=role==='warehouse';
+  const canSO=true, canWH=true;
 
   document.getElementById('m-order-head').innerHTML=`
   <div>
@@ -860,7 +896,7 @@ function showOrder(no){
   </div>`;
 
   document.getElementById('m-order-foot').innerHTML=`
-  ${role==='sale'?`<button class="btn btn-ghost" onclick="editOrder(${o.no})">${icon('edit')} แก้ไข</button>`:''}
+  <button class="btn btn-ghost" onclick="editOrder(${o.no})">${icon('edit')} แก้ไข</button>
   <button class="btn btn-ghost" onclick="closeModal('m-order')">ปิด</button>`;
 
   openModal('m-order');
@@ -879,12 +915,12 @@ function updateSONo(no,v){
 }
 function saveSONo(no){
   const o=ORDERS.find(x=>x.no===no);
-  const inp=document.querySelector('#m-order-body input[placeholder="SOIN26XXXXXX"]');
+  const inp=document.getElementById('so-input-'+no);
   if(inp)o.soNo=inp.value.trim();
   if(!o.soNo){toast('กรุณากรอกเลข SO','err');return;}
   o.soOpened=true;
   showOrder(no);
-  toast('💾 บันทึกเลข SO: '+o.soNo,'ok');
+  toast('✓ บันทึกเลข SO: '+o.soNo,'ok');
   sync('UPDATE_ORDER',o);renderShell();
 }
 function setWS(no,s){
@@ -941,7 +977,7 @@ function vNew(){
             <label class="form-label">ขนส่ง</label>
             <select onchange="draft.shipper=this.value">
               <option value="">— เลือก —</option>
-              ${['Lalamove','Flash Express','Kerry Express','นิ่ม เอกแพลส','ลูกค้ามารับเอง','By Sale','ย้ายไปคลัง 4care'].map(s=>`<option ${draft.shipper===s?'selected':''}>${s}</option>`).join('')}
+              ${['Lalamove','ลูกค้ามารับเอง','By Sale','ย้ายไปคลัง 4care'].map(s=>`<option ${draft.shipper===s?'selected':''}>${s}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
@@ -1081,6 +1117,13 @@ function editOrder(no){
   draft={...o,items:Object.fromEntries(o.items.map(i=>[i.id,{qty:i.qty,price:i.price,name:i.name}]))};
   closeModal('m-order');nav('new-order');
 }
+function deleteOrder(no){
+  if(!confirm(`ลบออเดอร์ No.${no} ออกจากรายการ?\n(ข้อมูลจะหายเฉพาะในหน้านี้ ชีต Google Sheets ไม่เปลี่ยนแปลง)`))return;
+  ORDERS=ORDERS.filter(o=>o.no!==no);
+  closeModal('m-order');
+  render(false);
+  toast(`ลบออเดอร์ No.${no} แล้ว`,'ok');
+}
 
 // ── PRODUCTS ─────────────────────────────────
 function vProds(){
@@ -1123,36 +1166,66 @@ function saveProd(old){
 
 // ── SO MANAGE ─────────────────────────────────
 function vSO(){
-  let list=ORDERS.filter(o=>!o.soOpened);
-  if(sq)list=list.filter(o=>(o.no+''+o.cust).toLowerCase().includes(sq));
+  let all=[...ORDERS];
+  if(sq)all=all.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
+  const pending=all.filter(o=>!o.soOpened);
+  const opened=all.filter(o=>o.soOpened);
   document.getElementById('content').innerHTML=`
   <div class="page-header">
-    <div><div class="page-title">รอเปิด SO</div><div class="page-sub">${list.length} ออเดอร์ยังไม่ได้เปิด SO</div></div>
+    <div><div class="page-title">จัดการ SO</div>
+      <div class="page-sub">รอเปิด <strong style="color:var(--red)">${pending.length}</strong> รายการ &nbsp;·&nbsp; เปิดแล้ว <strong style="color:var(--green)">${opened.length}</strong> รายการ</div>
+    </div>
   </div>
-  ${list.length===0?`<div class="empty-state">${icon('doc')}<div class="et">ออเดอร์ทั้งหมดเปิด SO แล้ว</div><div class="es">ไม่มีรายการรอดำเนินการ</div></div>`:`
-  <div class="table-wrap"><table class="order-table">
-  <thead><tr><th>No.</th><th>วันที่</th><th>Sale</th><th>ลูกค้า</th><th>ชำระ</th><th style="text-align:right">ยอด</th><th></th></tr></thead>
-  <tbody>${list.map(o=>`<tr onclick="showOrder(${o.no})">
-    <td><span class="order-no">${o.no}</span></td>
-    <td><span class="order-date">${o.date}</span></td>
-    <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
-    <td><div class="order-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
-    <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
-    <td class="order-amount">฿${fmt(tot(o))}</td>
-    <td><button class="btn btn-success btn-sm" onclick="event.stopPropagation();showOrder(${o.no})">เปิด SO</button></td>
-  </tr>`).join('')}</tbody></table></div>`}`;
+
+  <!-- รอเปิด SO -->
+  <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⏳ รอเปิด SO (${pending.length})</div>
+  ${pending.length===0
+    ?`<div style="padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);margin-bottom:16px">ไม่มีออเดอร์รอเปิด SO</div>`
+    :`<div class="table-wrap" style="margin-bottom:20px">
+      <table class="order-table" style="min-width:600px">
+      <thead><tr><th style="width:60px">No.</th><th style="width:88px">วันที่</th><th style="width:56px">Sale</th><th>ลูกค้า</th><th style="width:88px">ชำระ</th><th style="width:88px;text-align:right">ยอด</th><th style="width:100px"></th></tr></thead>
+      <tbody>${pending.map(o=>`<tr onclick="showOrder(${o.no})">
+        <td><span class="order-no">${o.no}</span></td>
+        <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
+        <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
+        <td><div style="font-weight:600;font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
+        <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
+        <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
+        <td><button class="btn btn-success btn-sm" style="width:100%" onclick="event.stopPropagation();showOrder(${o.no})">เปิด SO</button></td>
+      </tr>`).join('')}
+      </tbody></table></div>`}
+
+  <!-- เปิด SO แล้ว -->
+  <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">✓ เปิด SO แล้ว (${opened.length})</div>
+  ${opened.length===0
+    ?`<div style="padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3)">ยังไม่มีออเดอร์ที่เปิด SO</div>`
+    :`<div class="table-wrap">
+      <table class="order-table" style="min-width:600px">
+      <thead><tr><th style="width:60px">No.</th><th style="width:88px">วันที่</th><th style="width:56px">Sale</th><th>ลูกค้า</th><th style="width:150px">เลข SO</th><th style="width:88px;text-align:right">ยอด</th></tr></thead>
+      <tbody>${opened.map(o=>`<tr onclick="showOrder(${o.no})">
+        <td><span class="order-no">${o.no}</span></td>
+        <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
+        <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
+        <td><div style="font-weight:600;font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
+        <td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)">${o.soNo||'—'}</span></td>
+        <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
+      </tr>`).join('')}
+      </tbody></table></div>`}`;
 }
 
 // ── WAREHOUSE ─────────────────────────────────
 function vWH(){
   let list=ORDERS.filter(o=>o.soOpened);
   if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
-  const cols=[['รอดำเนินการ','#6B7280'],['เปิดบิลแล้ว',`var(--blue)`],['เตรียมของแล้ว',`var(--amber)`],['จัดส่งแล้ว',`var(--green)`]];
+  const cols=[['เปิดบิล','var(--blue)'],['เตรียมของ','var(--amber)'],['จัดส่ง','var(--green)']];  // 3 stages
   const grp={};cols.forEach(([s])=>grp[s]=[]);
-  list.forEach(o=>(grp[o.wStage]||grp['รอดำเนินการ']).push(o));
+  list.forEach(o=>{
+    const stage=o.wStage==='เปิดบิลแล้ว'?'เปิดบิล':o.wStage==='เตรียมของแล้ว'?'เตรียมของ':o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล';
+    grp[stage].push(o);
+  });
   document.getElementById('content').innerHTML=`
   <div class="page-header">
-    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">ออเดอร์ที่เปิด SO แล้ว ${list.length} รายการ</div></div>
+    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">ออเดอร์ที่มี SO แล้ว ${list.length} รายการ</div></div>
   </div>
   <div class="kanban">
   ${cols.map(([s,c])=>`
