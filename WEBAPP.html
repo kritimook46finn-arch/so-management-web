@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INS Sale Order</title>
+<style>
+:root{
+  --bg:#F7F8FA;
+  --surface:#FFFFFF;
+  --surface2:#F3F4F6;
+  --surface3:#E9EAEC;
+  --border:#E5E7EB;
+  --border2:#D1D5DB;
+  --text:#111827;
+  --text2:#4B5563;
+  --text3:#9CA3AF;
+  --green:#059669;
+  --green-soft:#ECFDF5;
+  --green-mid:#D1FAE5;
+  --green-dark:#065F46;
+  --amber:#D97706;
+  --amber-soft:#FFFBEB;
+  --red:#DC2626;
+  --red-soft:#FEF2F2;
+  --blue:#2563EB;
+  --blue-soft:#EFF6FF;
+  --purple:#7C3AED;
+  --purple-soft:#F5F3FF;
+  --r:10px;--r-sm:7px;
+  --font:'Inter','Noto Sans Thai','Leelawadee UI','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Fira Code','Consolas',monospace;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 12px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg:0 20px 40px rgba(0,0,0,.12),0 8px 16px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;color:var(--text);background:#fff;border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;width:100%;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(5,150,105,.12)}
+select option{background:#fff}
+textarea{resize:vertical;min-height:72px}
+a{color:var(--green);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* LAYOUT */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:224px;background:#111827;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sidebar-brand{padding:20px 18px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand-icon{width:34px;height:34px;border-radius:9px;background:var(--green);display:grid;place-items:center;flex-shrink:0}
+.brand-icon svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2}
+.brand-name{font-size:13px;font-weight:700;color:#fff;letter-spacing:.3px}
+.brand-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
+.sidebar-role{margin:12px 12px 4px;padding:10px 12px;border-radius:var(--r-sm);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+.sidebar-role strong{display:block;font-size:12px;font-weight:700;color:#fff;margin-bottom:2px}
+.sidebar-role span{font-size:11px;color:rgba(255,255,255,.4)}
+.sidebar-nav{padding:8px;flex:1;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.8px;padding:10px 8px 4px;text-transform:uppercase}
+.nav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:var(--r-sm);font-size:13px;color:rgba(255,255,255,.55);text-align:left;transition:all .12s;position:relative}
+.nav-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;flex-shrink:0}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85)}
+.nav-btn.active{background:var(--green);color:#fff;font-weight:600}
+.nav-btn.active svg{stroke:#fff}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:99px;padding:1px 6px;min-width:18px;text-align:center}
+.sidebar-footer{padding:12px;border-top:1px solid rgba(255,255,255,.07)}
+.logout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:var(--r-sm);font-size:12px;color:rgba(255,255,255,.35);transition:all .12s}
+.logout-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75}
+.logout-btn:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.7)}
+
+/* MAIN */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;flex-shrink:0;box-shadow:var(--shadow)}
+.topbar-title{font-size:15px;font-weight:700;color:var(--text);flex-shrink:0}
+.topbar-search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;flex:1;max-width:300px;transition:border-color .15s}
+.topbar-search:focus-within{border-color:var(--green);background:#fff}
+.topbar-search input{background:none;border:none;padding:0;font-size:13px;color:var(--text);width:100%;box-shadow:none}
+.topbar-search input:focus{box-shadow:none;border:none}
+.topbar-search svg{width:14px;height:14px;stroke:var(--text3);fill:none;flex-shrink:0}
+.topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.content-scroll{flex:1;overflow-y:auto;padding:24px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;border-radius:var(--r-sm);font-size:13px;font-weight:600;padding:8px 14px;transition:all .12s;cursor:pointer;white-space:nowrap}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.btn-primary{background:var(--green);color:#fff;box-shadow:0 1px 2px rgba(5,150,105,.25)}
+.btn-primary:hover{background:#047857}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:#047857}
+.btn-ghost{background:#fff;color:var(--text2);border:1.5px solid var(--border2)}
+.btn-ghost:hover{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+.btn-danger{background:var(--red-soft);color:var(--red);border:1.5px solid rgba(220,38,38,.2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.6px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.stat-green::after{background:var(--green)}
+.stat-amber::after{background:var(--amber)}
+.stat-red::after{background:var(--red)}
+.stat-blue::after{background:var(--blue)}
+.stat-purple::after{background:var(--purple)}
+.stat-label{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px;color:var(--text)}
+.stat-value small{font-size:12px;font-weight:500;color:var(--text3)}
+
+/* FILTERS */
+.filter-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.filter-chip{padding:5px 12px;border-radius:99px;font-size:12px;font-weight:600;background:#fff;color:var(--text2);border:1.5px solid var(--border2);cursor:pointer;transition:all .12s;white-space:nowrap}
+.filter-chip:hover{border-color:var(--green);color:var(--green)}
+.filter-chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* TABLE */
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.order-table{width:100%;border-collapse:collapse}
+.order-table th{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg)}
+.order-table td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.order-table tbody tr:last-child td{border-bottom:none}
+.order-table tbody tr{cursor:pointer;transition:background .1s}
+.order-table tbody tr:hover{background:#F0FDF9}
+.order-no{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--green)}
+.order-cust{font-weight:600;font-size:13px;color:var(--text)}
+.order-cust-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.order-amount{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.order-date{font-size:12px;color:var(--text2)}
+
+/* PIPELINE */
+.pipeline{display:flex;align-items:center;gap:0;flex-wrap:nowrap}
+.pipe-step{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;white-space:nowrap;letter-spacing:.3px}
+.pipe-step:first-child{border-radius:5px 0 0 5px}
+.pipe-step:last-child{border-radius:0 5px 5px 0}
+.pipe-step svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;flex-shrink:0}
+.pipe-done{background:var(--green-mid);color:var(--green-dark)}
+.pipe-active{background:var(--green);color:#fff}
+.pipe-wait{background:var(--surface3);color:var(--text3)}
+.pipe-sep{color:var(--border2);font-size:10px;line-height:1}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge-paid{background:var(--green-soft);color:var(--green)}
+.badge-unpaid{background:var(--amber-soft);color:var(--amber)}
+.badge-cancel{background:var(--red-soft);color:var(--red)}
+.sale-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px}
+.sale-golf{background:#EFF6FF;color:#1D4ED8}
+.sale-pea{background:var(--green-soft);color:var(--green)}
+.sale-oil{background:var(--amber-soft);color:var(--amber)}
+
+/* MODAL - THE FIX */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.modal-overlay.open{display:flex}
+.modal-box{
+  background:#fff;
+  border-radius:var(--r);
+  box-shadow:var(--shadow-lg);
+  width:100%;
+  max-width:560px;
+  display:flex;
+  flex-direction:column;
+  max-height:calc(100vh - 40px);
+  overflow:hidden;
+}
+.modal-head{
+  padding:18px 20px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  flex-shrink:0;
+}
+.modal-head-title{font-size:16px;font-weight:700;color:var(--text)}
+.modal-head-sub{font-size:12px;color:var(--text3);margin-top:3px}
+.modal-close-btn{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--text3);font-size:16px;line-height:1;transition:all .12s;flex-shrink:0;margin-left:8px}
+.modal-close-btn:hover{background:var(--surface2);color:var(--text)}
+.modal-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:18px 20px;
+}
+.modal-foot{
+  padding:12px 20px;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  flex-shrink:0;
+  background:#fff;
+}
+
+/* ORDER DETAIL inside modal */
+.detail-section{margin-bottom:16px}
+.detail-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.detail-no-big{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--text)}
+.field-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-block{display:flex;flex-direction:column;gap:4px}
+.field-lbl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.field-val{font-size:13px;color:var(--text);line-height:1.5}
+.field-val.mono{font-family:var(--mono);font-size:12px}
+.field-val.note-text{color:var(--text2);font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+
+/* ITEMS TABLE inside modal */
+.items-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.items-tbl th{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg)}
+.items-tbl th.r,.items-tbl td.r{text-align:right}
+.items-tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.items-tbl tbody tr:last-child td{border-bottom:none}
+.item-nm{font-size:12px;font-weight:600;color:var(--text)}
+.item-cd{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.total-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--green-soft);border-radius:0 0 var(--r-sm) var(--r-sm)}
+.total-bar .lbl{font-size:12px;color:var(--green-dark)}
+.total-bar .amt{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green)}
+
+/* SO / WAREHOUSE blocks */
+.action-block{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:10px}
+.action-block-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.check-row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px;font-weight:600;cursor:pointer;color:var(--text2)}
+.check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.check-row.on{color:var(--green)}
+.stage-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.stage-pill{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;border:1.5px solid var(--border2);background:#fff;color:var(--text3);cursor:pointer;transition:all .15s}
+.stage-pill:hover{border-color:var(--green);color:var(--green)}
+.stage-pill.sp-open{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+.stage-pill.sp-prep{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.stage-pill.sp-ship{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.span2{grid-column:1/-1}
+.form-label{font-size:12px;font-weight:700;color:var(--text2)}
+.form-label .req{color:var(--red)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg-btn{padding:7px 15px;border-radius:var(--r-sm);border:1.5px solid var(--border2);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .12s}
+.seg-btn:hover{border-color:var(--green);color:var(--green)}
+.seg-btn.on{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+
+/* PRODUCT PICKER */
+.prod-list{border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden;max-height:360px;overflow-y:auto;background:#fff}
+.prod-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .1s}
+.prod-row:last-child{border-bottom:none}
+.prod-row:hover{background:#F0FDF9}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prod-code{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.prod-price{font-size:12px;color:var(--text2);white-space:nowrap;font-weight:600}
+.qty-wrap{display:flex;align-items:center;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.qty-wrap button{width:28px;height:28px;font-size:15px;font-weight:700;color:var(--text3);display:grid;place-items:center;transition:all .1s}
+.qty-wrap button:hover{background:var(--green-soft);color:var(--green)}
+.qty-wrap input{width:46px;text-align:center;background:none;border:none;font-size:13px;font-weight:700;font-family:var(--mono);padding:0;color:var(--text);box-shadow:none;border-radius:0}
+
+/* CART */
+.cart-box{background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.cart-item{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.cart-item:last-child{border-bottom:none}
+.cart-item .n{flex:1;min-width:0;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px}
+.cart-item .a{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text)}
+.cart-total-row{display:flex;justify-content:space-between;padding:10px 12px;background:var(--green-soft);font-weight:800;font-size:14px}
+.cart-total-row span:last-child{color:var(--green);font-variant-numeric:tabular-nums}
+
+/* PRODUCTS GRID */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.prod-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;transition:all .12s;box-shadow:var(--shadow)}
+.prod-card:hover{border-color:var(--green);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+
+/* WAREHOUSE KANBAN */
+.kanban{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.kanban-col{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.kanban-head{padding:12px 14px;font-size:12px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.kanban-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:80px}
+.kanban-card{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;cursor:pointer;transition:all .12s}
+.kanban-card:hover{border-color:var(--green);background:#F0FDF9}
+.kanban-card-no{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green)}
+.kanban-card-cust{font-size:12px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kanban-card-so{font-family:var(--mono);font-size:10px;color:var(--green);margin-top:3px}
+.kanban-card-actions{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.ks-btn{padding:3px 9px;border-radius:99px;font-size:10px;font-weight:700;border:1.5px solid var(--border2);background:#fff;color:var(--text3);cursor:pointer;transition:all .12s}
+.ks-btn:hover{border-color:var(--green);color:var(--green)}
+.ks-btn.ks-open{border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
+.ks-btn.ks-prep{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.ks-btn.ks-ship{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+
+/* PAGE */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:800;letter-spacing:-.4px;color:var(--text)}
+.page-sub{font-size:13px;color:var(--text3);margin-top:3px}
+
+/* EMPTY */
+.empty-state{display:flex;flex-direction:column;align-items:center;padding:56px 20px;text-align:center;gap:10px}
+.empty-state svg{width:40px;height:40px;stroke:var(--text3);fill:none;stroke-width:1.5}
+.empty-state .et{font-size:15px;font-weight:700;color:var(--text2)}
+.empty-state .es{font-size:13px;color:var(--text3);max-width:260px;line-height:1.55}
+
+/* TOAST */
+.toast-area{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:#1F2937;color:#fff;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);transition:all .22s;white-space:nowrap}
+.toast.in{opacity:1;transform:translateY(0)}
+.toast.ok{border-left:3px solid var(--green)}
+.toast.err{border-left:3px solid var(--red)}
+
+@media(max-width:860px){
+  .sidebar{display:none}
+  .content-scroll{padding:14px}
+  .form-grid{grid-template-columns:1fr}
+  .field-grid2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="topbar-title">INS Sale Order</div>
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="search-input" placeholder="ค้นหา…" oninput="handleSearch(this.value)">
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </header>
+    <div class="content-scroll" id="content"></div>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="m-order" onclick="if(event.target===this)closeModal('m-order')">
+  <div class="modal-box">
+    <div class="modal-head" id="m-order-head"></div>
+    <div class="modal-scroll" id="m-order-body"></div>
+    <div class="modal-foot" id="m-order-foot"></div>
+  </div>
+</div>
+
+<!-- PRODUCT EDIT MODAL -->
+<div class="modal-overlay" id="m-prod" onclick="if(event.target===this)closeModal('m-prod')">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-head" id="m-prod-head"></div>
+    <div class="modal-scroll" id="m-prod-body"></div>
+    <div class="modal-foot" id="m-prod-foot"></div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="m-login" style="display:flex;background:rgba(0,0,0,.55)">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title">INS Sale Order</div>
+        <div class="modal-head-sub">เลือกบทบาทเพื่อเข้าระบบ</div>
+      </div>
+      <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    </div>
+    <div class="modal-scroll" id="m-login-body"></div>
+  </div>
+</div>
+
+<div class="toast-area" id="toasts"></div>
+
+<script>
+const GAS_URL='YOUR_APPS_SCRIPT_URL_HERE';
+
+// ── DATA ──────────────────────────────────────
+let PRODUCTS=[
+  {id:'100201100',name:'Sunflower seed protein',price:160,unit:'kg'},
+  {id:'100201000',name:'Pumpkin seed protein',price:290,unit:'kg'},
+  {id:'100201200',name:'Pea Protein HYPP-BE',price:160,unit:'kg'},
+  {id:'100201300',name:'Pea Protein HYPP-BLS',price:375,unit:'kg'},
+  {id:'100203100',name:'Organic Pea Protein HYPP-BOP',price:225,unit:'kg'},
+  {id:'100203300',name:'Isolated Soy Protein 666',price:98,unit:'kg'},
+  {id:'100200300',name:'Brown Rice Protein Powder',price:550,unit:'kg'},
+  {id:'100200400',name:'Rice Protein Powder',price:135,unit:'kg'},
+  {id:'100203000',name:'Rice protein powder 600 mesh',price:250,unit:'kg'},
+  {id:'100200500',name:'Peatides',price:900,unit:'kg'},
+  {id:'100200700',name:'Soy Protein - Low Sodium',price:195,unit:'kg'},
+  {id:'100200800',name:'Soybean powder 18%',price:350,unit:'kg'},
+  {id:'100201500',name:'Chiaseed Protein 60%',price:2100,unit:'kg'},
+  {id:'100201800',name:'Flaxseed protein 80%',price:1150,unit:'kg'},
+  {id:'100201900',name:'Mung bean protein 80%',price:750,unit:'kg'},
+  {id:'100202000',name:'Oat protein powder 90%',price:839,unit:'kg'},
+  {id:'100202200',name:'Pea Protein Powder 90%',price:210,unit:'kg'},
+  {id:'100202300',name:'Quinoa protein 80%',price:1450,unit:'kg'},
+  {id:'100202400',name:'Potato protein 60%',price:1550,unit:'kg'},
+  {id:'100300300',name:'Skimmed Milk Powder',price:135,unit:'kg'},
+  {id:'100300700',name:'Pro Lactose Free Skimmed Milk',price:495,unit:'kg'},
+  {id:'100501400',name:'Hydrolyzed Oat Powder',price:275,unit:'kg'},
+  {id:'100501300',name:'Almond Milk Powder',price:590,unit:'kg'},
+  {id:'100600100',name:'Organic matcha green tea (JAS)',price:1500,unit:'kg'},
+  {id:'100600300',name:'Organic Matcha Ceremonial (JAS)',price:12000,unit:'kg'},
+  {id:'100600600',name:'Matcha green tea R7-0414A',price:2225,unit:'kg'},
+  {id:'100600700',name:'Organic Fat-Reduced Cacao (USDA)',price:950,unit:'kg'},
+  {id:'100800100',name:'Banana Juice Powder',price:950,unit:'kg'},
+  {id:'100802600',name:'Purple Sweet Potato Powder',price:675,unit:'kg'},
+  {id:'100803100',name:'Acerola Cherry Extract Powder',price:1950,unit:'kg'},
+  {id:'100803800',name:'Broccoli powder',price:1950,unit:'kg'},
+  {id:'100803900',name:'Blue Spirulina Extract',price:14000,unit:'kg'},
+  {id:'100805000',name:'Pumpkin Powder',price:650,unit:'kg'},
+  {id:'400201201',name:'Pea Protein HYPP-BE 1kg',price:210,unit:'unit'},
+  {id:'400201205',name:'Pea Protein HYPP-BE 5kg',price:195,unit:'unit'},
+  {id:'400201101',name:'Sunflower seed protein 1kg',price:450,unit:'unit'},
+  {id:'400201105',name:'Sunflower seed protein 5kg',price:390,unit:'unit'},
+  {id:'400201001',name:'Pumpkin seed protein 1kg',price:650,unit:'unit'},
+  {id:'400201005',name:'Pumpkin seed protein 5kg',price:650,unit:'unit'},
+  {id:'400202201',name:'Pea Protein Powder 90% 1kg',price:375,unit:'unit'},
+  {id:'400203301',name:'Isolated Soy Protein 666 1kg',price:195,unit:'unit'},
+  {id:'400300601',name:'Hydrolyzed Oat Powder 1kg',price:450,unit:'unit'},
+  {id:'400300605',name:'Hydrolyzed Oat Powder 5kg',price:350,unit:'unit'},
+  {id:'400501301',name:'Almond Milk Powder 1kg',price:650,unit:'unit'},
+  {id:'400600101',name:'Matcha green tea 1kg',price:2500,unit:'unit'},
+];
+
+let ORDERS=[
+  {no:490,date:'11/06/2026',sale:'Golf',cust:'L030043 บจก. แพลนเต้ ไลฟ์',
+   items:[{id:'100201100',name:'Sunflower seed protein',qty:25,price:160},{id:'100201000',name:'Pumpkin seed protein',qty:60,price:290}],
+   pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
+   shipper:'Lalamove',shipTo:'แจ้งป้อมยาม บริษัท ไบโอแกรนด์ จำกัด เลขที่ 6 หมู่ที่ 2 ตำบล หน้าไม้ อำเภอลาดหลุมแก้ว ปทุมธานี 12140',
+   shipDate:'12/06/2026',note:'ทำใบส่งของ 2 ฉบับ พร้อมลายเซ็นต์คนขับรถ + COA ให้โรงงาน',
+   soOpened:false,soNo:'',wStage:''},
+  {no:489,date:'10/06/2026',sale:'Golf',cust:'L030022 บจก. ไอ เฮิร์บ คอร์ปอเรชั่น',
+   items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:100,price:160}],
+   pay:'Cash',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample',
+   shipper:'Lalamove',shipTo:'เลขที่ 896 898 ซอย รามคำแหง 64',shipDate:'15/06/2026',note:'',
+   soOpened:true,soNo:'SOIN26060027',wStage:'จัดส่งแล้ว'},
+  {no:488,date:'09/06/2026',sale:'Pea',cust:'L030079 บจก. นอร์เบิร์ต อินโนเวชั่น',
+   items:[{id:'100201000',name:'Pumpkin seed protein',qty:20,price:550}],
+   pay:'Cash',payStatus:'ยังไม่ชำระ',po:'',
+   shipper:'Lalamove',shipTo:'8/17 หมู่ที่ 8 ต.คลองสอง อ.คลองหลวง ปทุมธานี',shipDate:'12/06/2026',note:'',
+   soOpened:true,soNo:'SOIN26060025',wStage:'เตรียมของแล้ว'},
+  {no:487,date:'09/06/2026',sale:'Oil',cust:'L030093 บจก.บียอนด์ แล็บโบราโทรี่',
+   items:[{id:'400200301',name:'Brown Rice Protein 1kg',qty:1,price:590}],
+   pay:'Cash',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample2',
+   shipper:'Flash',shipTo:'555/121 บี อเวนิว วัชรพล ถ.สุขาภิบาล ๕ กรุงเทพ 10220',shipDate:'15/06/2026',note:'ขอใบแจ้งหนี้',
+   soOpened:false,soNo:'',wStage:''},
+  {no:486,date:'09/06/2026',sale:'Golf',cust:'L030015 บริษัท ฟอร์แคร์ อินโน จำกัด',
+   items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160}],
+   pay:'Credit',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample3',
+   shipper:'ย้ายไปคลัง 4care',shipTo:'คลัง 4care',shipDate:'10/06/2026',note:'ทะยอยเรียกเข้า อย่างละ 500 kg.',
+   soOpened:true,soNo:'SOIN26060023',wStage:'เปิดบิลแล้ว'},
+  {no:485,date:'09/06/2026',sale:'Golf',cust:'บริษัท อินน็อกเซ่ลลา จำกัด',
+   items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160},{id:'100203000',name:'Rice protein powder 600 mesh',qty:1000,price:250}],
+   pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
+   shipper:'Lalamove',shipTo:'CM Factory 91-819-3877 คุณฝน',shipDate:'11/06/2026',note:'',
+   soOpened:false,soNo:'',wStage:''},
+  {no:484,date:'08/06/2026',sale:'Golf',cust:'L030016 บริษัท ชาร์แมซ คอสเมด จำกัด',
+   items:[{id:'100200500',name:'Peatides',qty:5,price:900}],
+   pay:'Credit',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample4',
+   shipper:'Lalamove',shipTo:'99/9 ถนน พุทธมณฑลสาย 4 กรุงเทพ',shipDate:'09/06/2026',note:'',
+   soOpened:true,soNo:'SOIN26060021',wStage:'จัดส่งแล้ว'},
+];
+let runNo=491;
+
+const ROLES={
+  sale:{label:'เซลล์',name:'kaewalee.kh'},
+  backend:{label:'หลังบ้าน SO',name:'admin.ins'},
+  warehouse:{label:'คลัง',name:'warehouse.ins'},
+};
+let role=null,view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null;
+
+// ── HELPERS ───────────────────────────────────
+const fmt=n=>(+n||0).toLocaleString('th-TH');
+const tot=o=>o.items.reduce((s,i)=>s+(i.price||0)*(i.qty||0),0);
+const plabel=o=>o.wStage==='จัดส่งแล้ว'?'done':o.wStage?'wh':o.soOpened?'so':'sale';
+
+function toast(msg,type=''){
+  const a=document.getElementById('toasts');
+  const t=document.createElement('div');
+  t.className='toast'+(type==='ok'?' ok':type==='err'?' err':'');
+  t.textContent=msg;a.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('in'));
+  setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),250)},2600);
+}
+
+function icon(n){
+  const m={
+    pulse:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+    list:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>',
+    box:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    plus:'<circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>',
+    warehouse:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/>',
+    out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+    edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+    truck:'<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  };
+  return`<svg viewBox="0 0 24 24">${m[n]||''}</svg>`;
+}
+
+function pipe(o){
+  const s=plabel(o);
+  const sep='<span class="pipe-sep">›</span>';
+  const step=(lbl,ico,cls)=>`<span class="pipe-step ${cls}">${icon(ico)}${lbl}</span>`;
+  const s1=step('เซลล์','list',s!=='sale'?'pipe-done':'pipe-active');
+  const s2=step('SO','doc',s==='so'?'pipe-active':s==='wh'||s==='done'?'pipe-done':'pipe-wait');
+  const s3=step('คลัง','warehouse',s==='wh'?'pipe-active':s==='done'?'pipe-done':'pipe-wait');
+  const s4=step('จัดส่ง','truck',s==='done'?'pipe-done':'pipe-wait');
+  return`<div class="pipeline">${s1}${sep}${s2}${sep}${s3}${sep}${s4}</div>`;
+}
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+// ── LOGIN ─────────────────────────────────────
+document.getElementById('m-login-body').innerHTML=`
+<div style="padding:4px 0 20px;display:flex;flex-direction:column;gap:10px">
+${Object.entries(ROLES).map(([k,v])=>`
+<button onclick="doLogin('${k}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:#fff;text-align:left;cursor:pointer;transition:all .12s;width:100%;font-family:inherit" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
+  <div style="width:38px;height:38px;border-radius:10px;background:var(--green-soft);display:grid;place-items:center;flex-shrink:0">${icon('list')}</div>
+  <div><div style="font-size:14px;font-weight:700;color:var(--text)">${v.label}</div><div style="font-size:12px;color:var(--text3);margin-top:2px">${v.name}@ins.co.th</div></div>
+  <div style="margin-left:auto;color:var(--text3);font-size:18px">›</div>
+</button>`).join('')}
+</div>`;
+
+function doLogin(r){
+  role=r;
+  closeModal('m-login');
+  renderShell();
+  nav('dashboard');
+  toast('ยินดีต้อนรับ '+ROLES[r].label,'ok');
+}
+function doLogout(){role=null;document.getElementById('m-login').classList.add('open')}
+
+// ── SHELL ─────────────────────────────────────
+function renderShell(){
+  const pending=ORDERS.filter(o=>!o.soOpened).length;
+  const items=[
+    {k:'dashboard',l:'ภาพรวม',i:'pulse'},
+    {k:'orders',l:'รายการออเดอร์',i:'list'},
+    ...(role==='sale'?[{k:'new-order',l:'สร้างออเดอร์ใหม่',i:'plus'},{k:'products',l:'รายการสินค้า',i:'box'}]:[]),
+    ...(role==='backend'?[{k:'so-manage',l:'จัดการ SO',i:'doc',badge:pending||''}]:[]),
+    ...(role==='warehouse'?[{k:'warehouse',l:'สถานะคลัง',i:'warehouse'}]:[]),
+  ];
+  document.getElementById('sidebar').innerHTML=`
+  <div class="sidebar-brand">
+    <div class="brand-icon">${icon('pulse')}</div>
+    <div><div class="brand-name">INS SaleOrder</div><div class="brand-sub">Innovative Natural Solutions</div></div>
+  </div>
+  <div class="sidebar-role"><strong>${ROLES[role].label}</strong><span>${ROLES[role].name}@ins.co.th</span></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">เมนู</div>
+    ${items.map(x=>`<button class="nav-btn" id="nb-${x.k}" onclick="nav('${x.k}')">${icon(x.i)}${x.l}${x.badge?`<span class="nav-badge">${x.badge}</span>`:''}</button>`).join('')}
+  </nav>
+  <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">${icon('out')}<span>ออกจากระบบ</span></button></div>`;
+}
+
+// ── NAVIGATION ────────────────────────────────
+function nav(v){
+  view=v;sq='';
+  document.getElementById('search-input').value='';
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nb=document.getElementById('nb-'+v);if(nb)nb.classList.add('active');
+  render();
+}
+function handleSearch(q){sq=q.toLowerCase();if(['orders','so-manage','warehouse','products'].includes(view))render(false);}
+function render(sc=true){
+  if(sc)document.getElementById('content').scrollTop=0;
+  document.getElementById('topbar-title').textContent={dashboard:'ภาพรวม',orders:'รายการออเดอร์','new-order':'สร้างออเดอร์ใหม่',products:'รายการสินค้า','so-manage':'จัดการ SO',warehouse:'สถานะคลัง'}[view]||'';
+  ({dashboard:vDash,orders:vOrders,'new-order':vNew,products:vProds,'so-manage':vSO,warehouse:vWH}[view]||vDash)();
+}
+
+// ── VIEWS ─────────────────────────────────────
+function vDash(){
+  const total=ORDERS.reduce((s,o)=>s+tot(o),0);
+  const unpaid=ORDERS.filter(o=>o.payStatus==='ยังไม่ชำระ').length;
+  const noso=ORDERS.filter(o=>!o.soOpened).length;
+  const shipped=ORDERS.filter(o=>o.wStage==='จัดส่งแล้ว').length;
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">สวัสดี, ${ROLES[role].label}</div><div class="page-sub">${new Date().toLocaleDateString('th-TH')} · INS Sale Order</div></div>
+    ${role==='sale'?`<button class="btn btn-primary" onclick="nav('new-order')">${icon('plus')} สร้างออเดอร์ใหม่</button>`:''}
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card stat-green"><div class="stat-label">ออเดอร์</div><div class="stat-value">${ORDERS.length}<small> รายการ</small></div></div>
+    <div class="stat-card stat-green"><div class="stat-label">ยอดรวม</div><div class="stat-value" style="font-size:18px">฿${fmt(total)}</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">ยังไม่ชำระ</div><div class="stat-value" style="color:var(--amber)">${unpaid}</div></div>
+    <div class="stat-card stat-red"><div class="stat-label">รอเปิด SO</div><div class="stat-value" style="color:var(--red)">${noso}</div></div>
+    <div class="stat-card stat-blue"><div class="stat-label">จัดส่งแล้ว</div><div class="stat-value" style="color:var(--blue)">${shipped}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">ออเดอร์ล่าสุด</div>
+    <div style="overflow-x:auto">
+    <table class="order-table"><thead><tr><th>No.</th><th>ลูกค้า</th><th>Pipeline</th><th>ชำระ</th><th style="text-align:right">ยอด</th></tr></thead>
+    <tbody>${ORDERS.slice(0,6).map(o=>`<tr onclick="showOrder(${o.no})">
+      <td><span class="order-no">${o.no}</span><br><span style="font-size:11px;color:var(--text3)">${o.date}</span></td>
+      <td><div class="order-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div><div class="order-cust-sub"><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></div></td>
+      <td>${pipe(o)}</td>
+      <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
+      <td class="order-amount">฿${fmt(tot(o))}</td>
+    </tr>`).join('')}</tbody></table></div>
+    <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="nav('orders')">ดูทั้งหมด →</button></div>
+  </div>`;
+}
+
+function vOrders(){
+  let list=[...ORDERS];
+  if(sq)list=list.filter(o=>(o.no+''+o.cust+o.sale+(o.soNo||'')).toLowerCase().includes(sq));
+  if(fSale!=='ทั้งหมด')list=list.filter(o=>o.sale===fSale);
+  if(fPay!=='ทั้งหมด')list=list.filter(o=>o.payStatus===fPay);
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">รายการออเดอร์</div><div class="page-sub">${list.length} จาก ${ORDERS.length} รายการ</div></div>
+    ${role==='sale'?`<button class="btn btn-primary" onclick="nav('new-order')">${icon('plus')} สร้างใหม่</button>`:''}
+  </div>
+  <div class="filter-row">
+    ${['ทั้งหมด','Golf','Pea','Oil'].map(s=>`<button class="filter-chip ${fSale===s?'active':''}" onclick="fSale='${s}';render(false)">${s}</button>`).join('')}
+    <div style="width:1px;height:18px;background:var(--border);margin:0 2px"></div>
+    ${['ทั้งหมด','ยังไม่ชำระ','ชำระแล้ว'].map(s=>`<button class="filter-chip ${fPay===s?'active':''}" onclick="fPay='${s}';render(false)">${s}</button>`).join('')}
+  </div>
+  <div class="table-wrap"><table class="order-table">
+  <thead><tr><th>No.</th><th>วันที่</th><th>Sale</th><th>ลูกค้า</th><th>สินค้า</th><th>Pipeline</th><th>ชำระ</th><th>SO</th><th style="text-align:right">ยอด</th></tr></thead>
+  <tbody>${list.length===0?`<tr><td colspan="9"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`:
+  list.map(o=>`<tr onclick="showOrder(${o.no})">
+    <td><span class="order-no">${o.no}</span></td>
+    <td><span class="order-date">${o.date}</span></td>
+    <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
+    <td><div class="order-cust" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
+    <td style="color:var(--text3);font-size:12px">${o.items.length} รายการ</td>
+    <td>${pipe(o)}</td>
+    <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
+    <td><span style="font-family:var(--mono);font-size:11px;color:${o.soOpened?'var(--green)':'var(--text3)'}">${o.soNo||'—'}</span></td>
+    <td class="order-amount">฿${fmt(tot(o))}</td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+// ── ORDER DETAIL MODAL ────────────────────────
+function showOrder(no){
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  const total=tot(o);
+  const canSO=role==='backend', canWH=role==='warehouse';
+
+  document.getElementById('m-order-head').innerHTML=`
+  <div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+      <div class="detail-no-big">No. ${o.no}</div>
+      <span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span>
+      <span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span>
+    </div>
+    <div class="modal-head-sub">${o.date} · ${o.cust}</div>
+  </div>
+  <button class="modal-close-btn" onclick="closeModal('m-order')">✕</button>`;
+
+  document.getElementById('m-order-body').innerHTML=`
+  <!-- Pipeline -->
+  <div style="margin-bottom:16px">${pipe(o)}</div>
+
+  <!-- Items -->
+  <div class="detail-section">
+    <div class="detail-section-title">รายการสินค้า</div>
+    <div style="border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+      <table class="items-tbl">
+        <thead><tr><th>สินค้า</th><th class="r">จำนวน</th><th class="r">ราคา</th><th class="r">ยอด</th></tr></thead>
+        <tbody>${o.items.map(i=>`<tr>
+          <td><div class="item-nm">${i.name}</div>${i.id?`<div class="item-cd">${i.id}</div>`:''}</td>
+          <td class="r" style="font-variant-numeric:tabular-nums">${fmt(i.qty)} ${i.id&&i.id.startsWith('4')?'unit':'kg'}</td>
+          <td class="r" style="font-variant-numeric:tabular-nums">฿${fmt(i.price)}</td>
+          <td class="r" style="font-weight:700;font-variant-numeric:tabular-nums">฿${fmt(i.price*i.qty)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      <div class="total-bar"><span class="lbl">ยอดรวม</span><span class="amt">฿${fmt(total)}</span></div>
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div class="detail-section">
+    <div class="detail-section-title">ข้อมูลออเดอร์</div>
+    <div class="field-grid2">
+      <div class="field-block"><div class="field-lbl">การชำระเงิน</div><div class="field-val">${o.pay}</div></div>
+      <div class="field-block"><div class="field-lbl">ขนส่ง</div><div class="field-val">${o.shipper||'-'}</div></div>
+      <div class="field-block"><div class="field-lbl">วันต้องการส่ง</div><div class="field-val">${o.shipDate||'-'}</div></div>
+      <div class="field-block"><div class="field-lbl">Link PO</div><div class="field-val">${o.po?`<a href="${o.po}" target="_blank">เปิดเอกสาร ↗</a>`:'ไม่มี'}</div></div>
+      <div class="field-block" style="grid-column:1/-1"><div class="field-lbl">จัดส่งที่</div><div class="field-val">${o.shipTo||'-'}</div></div>
+      ${o.note?`<div class="field-block" style="grid-column:1/-1"><div class="field-lbl">หมายเหตุ</div><div class="field-val note-text">${o.note}</div></div>`:''}
+    </div>
+  </div>
+
+  <!-- SO Block -->
+  <div class="action-block">
+    <div class="action-block-title">${icon('doc')} สถานะ SO</div>
+    ${canSO?`
+      <label class="check-row ${o.soOpened?'on':''}">
+        <input type="checkbox" ${o.soOpened?'checked':''} onchange="toggleSO(${o.no},this.checked)">
+        เปิด SO แล้ว
+      </label>
+      ${o.soOpened?`<div class="form-group" style="margin-top:10px">
+        <label class="form-label">เลข SO (SOIN...)</label>
+        <input style="font-family:var(--mono);letter-spacing:.5px" placeholder="SOIN26XXXXXX" value="${o.soNo||''}" onchange="updateSONo(${o.no},this.value)">
+      </div>`:''}`
+    :o.soOpened
+      ?`<div style="display:flex;align-items:center;gap:8px;color:var(--green);font-weight:700;font-size:13px">✓ เปิด SO แล้ว <span style="font-family:var(--mono);font-size:12px">${o.soNo||''}</span></div>`
+      :`<div style="color:var(--amber);font-size:12px;font-weight:600">⏳ รอหลังบ้านเปิด SO</div>`}
+  </div>
+
+  <!-- Warehouse Block -->
+  <div class="action-block">
+    <div class="action-block-title">${icon('warehouse')} สถานะคลัง</div>
+    ${canWH?`
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">เลือกสถานะปัจจุบัน</div>
+      <div class="stage-pills">
+        ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(s=>{
+          const cls=o.wStage===s?'sp-'+(s==='เปิดบิลแล้ว'?'open':s==='เตรียมของแล้ว'?'prep':'ship'):'';
+          return`<button class="stage-pill ${cls}" onclick="setWS(${o.no},'${s}')">${s}</button>`;
+        }).join('')}
+      </div>`
+    :o.wStage
+      ?`<div style="font-size:13px;font-weight:700;color:var(--green)">📦 ${o.wStage}</div>`
+      :`<div style="font-size:12px;color:var(--text3)">ยังไม่มีสถานะคลัง</div>`}
+  </div>`;
+
+  document.getElementById('m-order-foot').innerHTML=`
+  ${role==='sale'?`<button class="btn btn-ghost" onclick="editOrder(${o.no})">${icon('edit')} แก้ไข</button>`:''}
+  <button class="btn btn-ghost" onclick="closeModal('m-order')">ปิด</button>`;
+
+  openModal('m-order');
+}
+
+function toggleSO(no,v){
+  const o=ORDERS.find(x=>x.no===no);
+  o.soOpened=v;if(!v)o.soNo='';
+  showOrder(no);
+  toast(v?'เปิด SO แล้ว':'ยกเลิกสถานะ SO','ok');
+  sync('UPDATE_ORDER',o);renderShell();
+}
+function updateSONo(no,v){
+  const o=ORDERS.find(x=>x.no===no);o.soNo=v.trim();
+  toast('บันทึกเลข SO: '+o.soNo,'ok');sync('UPDATE_ORDER',o);
+}
+function setWS(no,s){
+  const o=ORDERS.find(x=>x.no===no);o.wStage=s;
+  showOrder(no);
+  toast('อัปเดตสถานะ: '+s,'ok');sync('UPDATE_ORDER',o);
+}
+
+// ── NEW ORDER ─────────────────────────────────
+function vNew(){
+  if(!draft)draft={sale:'',cust:'',pay:'',payStatus:'ยังไม่ชำระ',po:'',shipper:'',shipTo:'',shipDate:'',note:'',items:{}};
+  let prods=PRODUCTS;if(sq)prods=PRODUCTS.filter(p=>(p.id+p.name).toLowerCase().includes(sq));
+  const ci=Object.entries(draft.items).filter(([,v])=>v.qty>0);
+  const ct=ci.reduce((s,[,v])=>s+v.price*v.qty,0);
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">สร้างออเดอร์ใหม่</div><div class="page-sub">กรอกข้อมูล เลือกสินค้า แล้วกดบันทึก</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">ข้อมูลออเดอร์</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Sale <span class="req">*</span></label>
+            <div class="seg">${['Golf','Pea','Oil'].map(s=>`<button class="seg-btn ${draft.sale===s?'on':''}" onclick="draft.sale='${s}';render(false)">${s}</button>`).join('')}</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">การชำระเงิน <span class="req">*</span></label>
+            <div class="seg">${['Cash','Cheque','Credit'].map(s=>`<button class="seg-btn ${draft.pay===s?'on':''}" onclick="draft.pay='${s}';render(false)">${s}</button>`).join('')}</div>
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">ชื่อบริษัทลูกค้า <span class="req">*</span></label>
+            <input placeholder="เช่น L030043 บจก. แพลนเต้ ไลฟ์" value="${draft.cust}" oninput="draft.cust=this.value">
+          </div>
+          <div class="form-group">
+            <label class="form-label">สถานะชำระ</label>
+            <div class="seg">${['ยังไม่ชำระ','ชำระแล้ว'].map(s=>`<button class="seg-btn ${draft.payStatus===s?'on':''}" onclick="draft.payStatus='${s}';render(false)">${s}</button>`).join('')}</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ขนส่ง</label>
+            <select onchange="draft.shipper=this.value">
+              <option value="">— เลือก —</option>
+              ${['Lalamove','Flash Express','Kerry Express','นิ่ม เอกแพลส','ลูกค้ามารับเอง','By Sale','ย้ายไปคลัง 4care'].map(s=>`<option ${draft.shipper===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">วันที่ต้องการส่ง</label>
+            <input type="date" value="${draft.shipDate}" onchange="draft.shipDate=this.value">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Link PO</label>
+            <input placeholder="https://drive.google.com/…" value="${draft.po}" oninput="draft.po=this.value">
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">จัดส่งที่</label>
+            <textarea placeholder="ที่อยู่จัดส่ง" oninput="draft.shipTo=this.value">${draft.shipTo}</textarea>
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">หมายเหตุ</label>
+            <textarea placeholder="เช่น ทำใบส่งของ 2 ฉบับ + COA…" oninput="draft.note=this.value">${draft.note}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">เลือกสินค้า — กด +/− หรือพิมพ์จำนวน</div>
+        <div class="prod-list">
+        ${prods.slice(0,60).map(p=>{
+          const q=draft.items[p.id]?.qty||0;
+          return`<div class="prod-row">
+            <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-code">${p.id}</div></div>
+            <div class="prod-price">฿${fmt(p.price)}/${p.unit}</div>
+            <div class="qty-wrap">
+              <button onclick="chQ('${p.id}',${p.price},-1)">−</button>
+              <input type="number" min="0" value="${q}" onchange="setQ('${p.id}',${p.price},+this.value)">
+              <button onclick="chQ('${p.id}',${p.price},1)">+</button>
+            </div>
+          </div>`;}).join('')}
+        </div>
+        ${prods.length>60?`<div style="padding:8px 12px;font-size:11px;color:var(--text3)">แสดง 60/${prods.length} — ค้นหาเพื่อกรอง</div>`:''}
+      </div>
+    </div>
+    <div style="position:sticky;top:16px">
+      <div class="card">
+        <div class="card-title">สรุปออเดอร์</div>
+        ${ci.length===0?`<div style="color:var(--text3);font-size:13px;padding:8px 0">ยังไม่ได้เลือกสินค้า</div>`:`
+        <div class="cart-box">
+          ${ci.map(([id,v])=>`<div class="cart-item"><span class="n">${v.name}</span><div style="text-align:right"><span style="font-size:11px;color:var(--text3)">×${v.qty} ฿${fmt(v.price)}</span><br><span class="a">฿${fmt(v.price*v.qty)}</span></div></div>`).join('')}
+          <div class="cart-total-row"><span>รวม</span><span>฿${fmt(ct)}</span></div>
+        </div>`}
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+          <button class="btn btn-primary" ${!draft.sale||!draft.cust||!draft.pay||ci.length===0?'disabled':''} onclick="saveOrder()">${icon('plus')} บันทึกออเดอร์</button>
+          <button class="btn btn-ghost" onclick="draft=null;nav('orders')">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function chQ(pid,price,d){
+  const pname=PRODUCTS.find(p=>p.id===pid)?.name||pid;
+  if(!draft.items[pid])draft.items[pid]={qty:0,price,name:pname};
+  draft.items[pid].qty=Math.max(0,draft.items[pid].qty+d);
+  if(draft.items[pid].qty===0)delete draft.items[pid];
+  render(false);
+}
+function setQ(pid,price,qty){
+  qty=Math.max(0,+qty||0);
+  if(qty===0){delete draft.items[pid];render(false);return;}
+  const pname=PRODUCTS.find(p=>p.id===pid)?.name||pid;
+  if(!draft.items[pid])draft.items[pid]={qty,price,name:pname};
+  else draft.items[pid].qty=qty;
+  render(false);
+}
+function saveOrder(){
+  const items=Object.entries(draft.items).filter(([,v])=>v.qty>0).map(([id,v])=>({id,name:v.name,qty:v.qty,price:v.price}));
+  const no=runNo++;
+  const now=new Date();
+  const d=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()}`;
+  const o={...draft,no,date:d,items,soOpened:false,soNo:'',wStage:''};
+  ORDERS.unshift(o);draft=null;
+  toast(`บันทึกออเดอร์ No.${no} แล้ว`,'ok');
+  sync('NEW_ORDER',o);nav('orders');
+}
+function editOrder(no){
+  const o=ORDERS.find(x=>x.no===no);
+  draft={...o,items:Object.fromEntries(o.items.map(i=>[i.id,{qty:i.qty,price:i.price,name:i.name}]))};
+  closeModal('m-order');nav('new-order');
+}
+
+// ── PRODUCTS ─────────────────────────────────
+function vProds(){
+  let list=PRODUCTS;if(sq)list=PRODUCTS.filter(p=>(p.id+p.name).toLowerCase().includes(sq));
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">รายการสินค้า</div><div class="page-sub">${list.length} รายการ</div></div>
+    <button class="btn btn-ghost" onclick="showProdEdit(null)">+ เพิ่มสินค้า</button>
+  </div>
+  <div class="prod-grid">${list.map(p=>`
+  <div class="prod-card" onclick="showProdEdit('${p.id}')">
+    <div><div style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px">${p.id}</div></div>
+    <div style="font-weight:700;font-size:13px;color:var(--green);white-space:nowrap">฿${fmt(p.price)}/${p.unit}</div>
+  </div>`).join('')}</div>`;
+}
+function showProdEdit(id){
+  const p=PRODUCTS.find(x=>x.id===id)||{id:'',name:'',price:0,unit:'kg'};
+  document.getElementById('m-prod-head').innerHTML=`<div class="modal-head-title">${id?'แก้ไขสินค้า':'เพิ่มสินค้า'}</div><button class="modal-close-btn" onclick="closeModal('m-prod')">✕</button>`;
+  document.getElementById('m-prod-body').innerHTML=`
+  <div class="form-grid">
+    <div class="form-group span2"><label class="form-label">รหัสสินค้า</label><input id="ep-id" value="${p.id}" placeholder="เช่น 100201100" style="font-family:var(--mono)"></div>
+    <div class="form-group span2"><label class="form-label">ชื่อสินค้า</label><input id="ep-name" value="${p.name}"></div>
+    <div class="form-group"><label class="form-label">ราคา (บาท)</label><input type="number" id="ep-price" value="${p.price}"></div>
+    <div class="form-group"><label class="form-label">หน่วย</label><select id="ep-unit"><option ${p.unit==='kg'?'selected':''}>kg</option><option ${p.unit==='unit'?'selected':''}>unit</option></select></div>
+  </div>`;
+  document.getElementById('m-prod-foot').innerHTML=`<button class="btn btn-ghost" onclick="closeModal('m-prod')">ยกเลิก</button><button class="btn btn-primary" onclick="saveProd('${id||''}')">บันทึก</button>`;
+  openModal('m-prod');
+}
+function saveProd(old){
+  const newid=document.getElementById('ep-id').value.trim();
+  const name=document.getElementById('ep-name').value.trim();
+  const price=+document.getElementById('ep-price').value||0;
+  const unit=document.getElementById('ep-unit').value;
+  if(!newid||!name){toast('กรุณากรอกรหัสและชื่อ','err');return;}
+  const idx=PRODUCTS.findIndex(p=>p.id===old);
+  if(idx>=0)PRODUCTS[idx]={id:newid,name,price,unit};
+  else PRODUCTS.unshift({id:newid,name,price,unit});
+  closeModal('m-prod');toast('บันทึกสินค้าแล้ว','ok');sync('UPDATE_PRODUCT',{id:newid,name,price,unit});render(false);
+}
+
+// ── SO MANAGE ─────────────────────────────────
+function vSO(){
+  let list=ORDERS.filter(o=>!o.soOpened);
+  if(sq)list=list.filter(o=>(o.no+''+o.cust).toLowerCase().includes(sq));
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">รอเปิด SO</div><div class="page-sub">${list.length} ออเดอร์ยังไม่ได้เปิด SO</div></div>
+  </div>
+  ${list.length===0?`<div class="empty-state">${icon('doc')}<div class="et">ออเดอร์ทั้งหมดเปิด SO แล้ว</div><div class="es">ไม่มีรายการรอดำเนินการ</div></div>`:`
+  <div class="table-wrap"><table class="order-table">
+  <thead><tr><th>No.</th><th>วันที่</th><th>Sale</th><th>ลูกค้า</th><th>ชำระ</th><th style="text-align:right">ยอด</th><th></th></tr></thead>
+  <tbody>${list.map(o=>`<tr onclick="showOrder(${o.no})">
+    <td><span class="order-no">${o.no}</span></td>
+    <td><span class="order-date">${o.date}</span></td>
+    <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
+    <td><div class="order-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
+    <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
+    <td class="order-amount">฿${fmt(tot(o))}</td>
+    <td><button class="btn btn-success btn-sm" onclick="event.stopPropagation();showOrder(${o.no})">เปิด SO</button></td>
+  </tr>`).join('')}</tbody></table></div>`}`;
+}
+
+// ── WAREHOUSE ─────────────────────────────────
+function vWH(){
+  let list=ORDERS.filter(o=>o.soOpened);
+  if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
+  const cols=[['รอดำเนินการ','#6B7280'],['เปิดบิลแล้ว',`var(--blue)`],['เตรียมของแล้ว',`var(--amber)`],['จัดส่งแล้ว',`var(--green)`]];
+  const grp={};cols.forEach(([s])=>grp[s]=[]);
+  list.forEach(o=>(grp[o.wStage]||grp['รอดำเนินการ']).push(o));
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">ออเดอร์ที่เปิด SO แล้ว ${list.length} รายการ</div></div>
+  </div>
+  <div class="kanban">
+  ${cols.map(([s,c])=>`
+  <div class="kanban-col">
+    <div class="kanban-head" style="border-top:3px solid ${c}"><span>${s}</span><span style="font-size:11px;background:var(--bg);padding:2px 8px;border-radius:99px;color:var(--text3)">${grp[s].length}</span></div>
+    <div class="kanban-body">
+    ${grp[s].length===0?`<div style="font-size:12px;color:var(--text3);padding:8px 4px">ไม่มีออเดอร์</div>`:
+    grp[s].map(o=>`
+    <div class="kanban-card" onclick="showOrder(${o.no})">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kanban-card-no">${o.no}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--green)">${o.soNo}</span>
+      </div>
+      <div class="kanban-card-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:10px;color:var(--text3)">${o.shipDate}</span>
+        <div class="kanban-card-actions">
+          ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(st=>{
+            const act=o.wStage===st;
+            const cl=act?(st==='เปิดบิลแล้ว'?'ks-open':st==='เตรียมของแล้ว'?'ks-prep':'ks-ship'):'';
+            const lbl=st.replace('แล้ว','');
+            return`<button class="ks-btn ${cl}" onclick="event.stopPropagation();setWS(${o.no},'${st}');render(false)">${lbl}</button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`).join('')}
+    </div>
+  </div>`).join('')}
+  </div>`;
+}
+
+// ── SYNC ──────────────────────────────────────
+async function sync(action,data){
+  if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE')return;
+  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action,data}),headers:{'Content-Type':'application/json'},mode:'no-cors'})}
+  catch(e){console.warn('sync failed',e)}
+}
+</script>
+</body>
+</html>
