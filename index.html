@@ -389,6 +389,22 @@ a:hover{text-decoration:underline}
 
 <div class="toast-area" id="toasts"></div>
 
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="m-delete" onclick="if(event.target===this)closeModal('m-delete')">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-head">
+      <div class="modal-head-title">ยืนยันการลบรายการออเดอร์</div>
+    </div>
+    <div class="modal-scroll" style="padding:16px 20px">
+      <div style="font-size:14px;color:var(--text2);line-height:1.6" id="delete-confirm-msg"></div>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn btn-ghost" onclick="closeModal('m-delete')" style="flex:1;justify-content:center">ยกเลิก</button>
+      <button class="btn btn-danger" id="delete-confirm-btn" style="flex:1;justify-content:center">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const GAS_URL='YOUR_APPS_SCRIPT_URL_HERE';
 
@@ -583,7 +599,7 @@ const USERS={
 };
 const LOGIN_PASS='insorder2026';
 const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
-let role=null,userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='';
+let role=null,userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
 
 // ── HELPERS ───────────────────────────────────
 const fmt=n=>(+n||0).toLocaleString('th-TH');
@@ -599,7 +615,8 @@ function toast(msg,type=''){
   setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),250)},2600);
 }
 
-function icon(n){
+function icon(n,sz){
+  const size=sz||'0 0 24 24';
   const m={
     pulse:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
     list:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>',
@@ -611,7 +628,7 @@ function icon(n){
     edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
     truck:'<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
   };
-  return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${m[n]||''}</svg>`;
+  return`<svg viewBox="${size}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${m[n]||''}</svg>`;
 }
 
 function pipe(o){
@@ -699,7 +716,7 @@ function renderShell(){
 
 // ── NAVIGATION ────────────────────────────────
 function nav(v){
-  view=v;sq='';if(v!=='new-order')prodSq='';
+  view=v;sq='';if(v!=='new-order')prodSq='';if(v!=='so-manage'){fSOStatus='ทั้งหมด';fSOSale='ทั้งหมด';}
   document.getElementById('search-input').value='';
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const nb=document.getElementById('nb-'+v);if(nb)nb.classList.add('active');
@@ -799,7 +816,9 @@ function vOrders(){
     <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
     <td><span style="font-family:var(--mono);font-size:11px;color:${o.soOpened?'var(--green)':'var(--text3)'};overflow:hidden;text-overflow:ellipsis;display:block;white-space:nowrap">${o.soNo||'—'}</span></td>
     <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
-    <td><button class="btn btn-danger btn-sm" style="padding:4px 8px;min-width:28px" title="ลบออเดอร์" onclick="event.stopPropagation();deleteOrder(${o.no})">✕</button></td>
+    <td><button class="btn btn-danger btn-sm" style="padding:4px 7px;min-width:28px" title="ลบออเดอร์" onclick="event.stopPropagation();confirmDeleteOrder(${o.no})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    </button></td>
   </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -854,10 +873,11 @@ function showOrder(no){
     </div>
   </div>
 
-  <!-- SO Block — ทุก role เห็น, backend แก้ได้ -->
+  <!-- SO Block -->
   <div class="action-block">
-    <div class="action-block-title" style="color:${o.soOpened?'var(--green)':'var(--amber)'}">${icon('doc')}
-      ${o.soOpened?'✓ เปิด SO แล้ว':'⏳ รอเปิด SO'}
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="${o.soOpened?'var(--green)':'var(--amber)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+      <span style="font-size:12px;font-weight:700;color:${o.soOpened?'var(--green)':'var(--amber)'};text-transform:uppercase;letter-spacing:.4px">${o.soOpened?'เปิด SO แล้ว':'รอเปิด SO'}</span>
     </div>
     ${canSO?`
       <label class="check-row ${o.soOpened?'on':''}" style="margin-bottom:6px">
@@ -876,10 +896,11 @@ function showOrder(no){
       </div>`}
   </div>
 
-  <!-- Warehouse Block — ทุก role เห็น, warehouse แก้ได้ -->
+  <!-- Warehouse Block -->
   <div class="action-block">
-    <div class="action-block-title" style="color:${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'}">${icon('warehouse')}
-      ${o.wStage||'ยังไม่มีสถานะคลัง'}
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+      <span style="font-size:12px;font-weight:700;color:${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'};text-transform:uppercase;letter-spacing:.4px">สถานะคลัง${o.wStage?' — '+o.wStage:''}</span>
     </div>
     ${canWH?`
       <div style="font-size:12px;color:var(--text2);margin-bottom:8px">อัปเดตสถานะการจัดส่ง</div>
@@ -1117,8 +1138,15 @@ function editOrder(no){
   draft={...o,items:Object.fromEntries(o.items.map(i=>[i.id,{qty:i.qty,price:i.price,name:i.name}]))};
   closeModal('m-order');nav('new-order');
 }
+function confirmDeleteOrder(no){
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  document.getElementById('delete-confirm-msg').innerHTML=
+    `ต้องการลบ <strong>No. ${no}</strong> — ${o.cust.replace(/^[A-Z]\d+ /,'')} ออกจากรายการ?<br><span style="font-size:12px;color:var(--text3);margin-top:4px;display:block">ข้อมูลจะหายเฉพาะในหน้านี้</span>`;
+  const btn=document.getElementById('delete-confirm-btn');
+  btn.onclick=()=>{deleteOrder(no);closeModal('m-delete');};
+  openModal('m-delete');
+}
 function deleteOrder(no){
-  if(!confirm(`ลบออเดอร์ No.${no} ออกจากรายการ?\n(ข้อมูลจะหายเฉพาะในหน้านี้ ชีต Google Sheets ไม่เปลี่ยนแปลง)`))return;
   ORDERS=ORDERS.filter(o=>o.no!==no);
   closeModal('m-order');
   render(false);
@@ -1165,57 +1193,76 @@ function saveProd(old){
 }
 
 // ── SO MANAGE ─────────────────────────────────
+function soTableRows(list){
+  const isPending = list[0] && !list[0].soOpened;
+  return list.map(o=>`<tr onclick="showOrder(${o.no})">
+    <td><span class="order-no">${o.no}</span></td>
+    <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
+    <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
+    <td><div style="font-weight:600;font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
+    <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
+    ${isPending
+      ?`<td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
+        <td><button class="btn btn-success btn-sm" style="width:100%" onclick="event.stopPropagation();showOrder(${o.no})">เปิด SO</button></td>`
+      :`<td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)">${o.soNo||'—'}</span></td>
+        <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>`}
+  </tr>`).join('');
+}
+
 function vSO(){
-  let all=[...ORDERS];
-  if(sq)all=all.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
-  const pending=all.filter(o=>!o.soOpened);
-  const opened=all.filter(o=>o.soOpened);
+  // เริ่มจาก No.350 ขึ้นไป
+  let base=ORDERS.filter(o=>o.no>=350);
+  if(sq)base=base.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
+  // apply filters — fSOStatus และ fSOSale สามารถเลือกพร้อมกันได้
+  let filtered=[...base];
+  if(fSOStatus==='รอเปิด')filtered=filtered.filter(o=>!o.soOpened);
+  else if(fSOStatus==='เปิดแล้ว')filtered=filtered.filter(o=>o.soOpened);
+  if(fSOSale!=='ทั้งหมด')filtered=filtered.filter(o=>o.sale===fSOSale);
+
+  const pending=filtered.filter(o=>!o.soOpened);
+  const opened=filtered.filter(o=>o.soOpened);
+  const totalBase=base.length;
+
   document.getElementById('content').innerHTML=`
   <div class="page-header">
     <div><div class="page-title">จัดการ SO</div>
-      <div class="page-sub">รอเปิด <strong style="color:var(--red)">${pending.length}</strong> รายการ &nbsp;·&nbsp; เปิดแล้ว <strong style="color:var(--green)">${opened.length}</strong> รายการ</div>
+      <div class="page-sub">No.350+ · รอเปิด <strong style="color:var(--red)">${base.filter(o=>!o.soOpened).length}</strong> · เปิดแล้ว <strong style="color:var(--green)">${base.filter(o=>o.soOpened).length}</strong></div>
     </div>
   </div>
 
-  <!-- รอเปิด SO -->
-  <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⏳ รอเปิด SO (${pending.length})</div>
-  ${pending.length===0
-    ?`<div style="padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);margin-bottom:16px">ไม่มีออเดอร์รอเปิด SO</div>`
-    :`<div class="table-wrap" style="margin-bottom:20px">
-      <table class="order-table" style="min-width:600px">
-      <thead><tr><th style="width:60px">No.</th><th style="width:88px">วันที่</th><th style="width:56px">Sale</th><th>ลูกค้า</th><th style="width:88px">ชำระ</th><th style="width:88px;text-align:right">ยอด</th><th style="width:100px"></th></tr></thead>
-      <tbody>${pending.map(o=>`<tr onclick="showOrder(${o.no})">
-        <td><span class="order-no">${o.no}</span></td>
-        <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
-        <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
-        <td><div style="font-weight:600;font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
-        <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
-        <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
-        <td><button class="btn btn-success btn-sm" style="width:100%" onclick="event.stopPropagation();showOrder(${o.no})">เปิด SO</button></td>
-      </tr>`).join('')}
-      </tbody></table></div>`}
+  <!-- Filters -->
+  <div class="filter-row" style="margin-bottom:14px;gap:6px;flex-wrap:wrap">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">สถานะ SO</span>
+      ${['ทั้งหมด','รอเปิด','เปิดแล้ว'].map(s=>`<button class="filter-chip ${fSOStatus===s?'active':''}" onclick="fSOStatus='${s}';render(false)">${s==='ทั้งหมด'?'ทั้งหมด':s==='รอเปิด'?'⏳ รอเปิด':'✓ เปิดแล้ว'}</button>`).join('')}
+    </div>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 4px;flex-shrink:0"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Sale</span>
+      ${['ทั้งหมด','Golf','Pea','Oil'].map(s=>`<button class="filter-chip ${fSOSale===s?'active':''}" onclick="fSOSale='${s}';render(false)">${s}</button>`).join('')}
+    </div>
+  </div>
 
-  <!-- เปิด SO แล้ว -->
+  ${filtered.length===0?`<div class="empty-state">${icon('doc')}<div class="et">ไม่พบออเดอร์ที่ตรงเงื่อนไข</div></div>`:''}
+
+  ${(fSOStatus==='ทั้งหมด'||fSOStatus==='รอเปิด')&&pending.length>0?`
+  <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⏳ รอเปิด SO (${pending.length})</div>
+  <div class="table-wrap" style="margin-bottom:20px;overflow-x:auto">
+    <table class="order-table" style="min-width:560px">
+    <thead><tr><th style="width:58px">No.</th><th style="width:86px">วันที่</th><th style="width:54px">Sale</th><th>ลูกค้า</th><th style="width:86px">ชำระ</th><th style="width:82px;text-align:right">ยอด</th><th style="width:90px"></th></tr></thead>
+    <tbody>${soTableRows(pending)}</tbody></table></div>`:''}
+
+  ${(fSOStatus==='ทั้งหมด'||fSOStatus==='เปิดแล้ว')&&opened.length>0?`
   <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">✓ เปิด SO แล้ว (${opened.length})</div>
-  ${opened.length===0
-    ?`<div style="padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3)">ยังไม่มีออเดอร์ที่เปิด SO</div>`
-    :`<div class="table-wrap">
-      <table class="order-table" style="min-width:600px">
-      <thead><tr><th style="width:60px">No.</th><th style="width:88px">วันที่</th><th style="width:56px">Sale</th><th>ลูกค้า</th><th style="width:150px">เลข SO</th><th style="width:88px;text-align:right">ยอด</th></tr></thead>
-      <tbody>${opened.map(o=>`<tr onclick="showOrder(${o.no})">
-        <td><span class="order-no">${o.no}</span></td>
-        <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
-        <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
-        <td><div style="font-weight:600;font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
-        <td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)">${o.soNo||'—'}</span></td>
-        <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
-      </tr>`).join('')}
-      </tbody></table></div>`}`;
+  <div class="table-wrap" style="overflow-x:auto">
+    <table class="order-table" style="min-width:560px">
+    <thead><tr><th style="width:58px">No.</th><th style="width:86px">วันที่</th><th style="width:54px">Sale</th><th>ลูกค้า</th><th style="width:86px">ชำระ</th><th style="width:140px">เลข SO</th><th style="width:82px;text-align:right">ยอด</th></tr></thead>
+    <tbody>${soTableRows(opened)}</tbody></table></div>`:''}`;
 }
 
 // ── WAREHOUSE ─────────────────────────────────
 function vWH(){
-  let list=ORDERS.filter(o=>o.soOpened);
+  let list=ORDERS.filter(o=>o.soOpened&&o.no>=350);
   if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
   const cols=[['เปิดบิล','var(--blue)'],['เตรียมของ','var(--amber)'],['จัดส่ง','var(--green)']];  // 3 stages
   const grp={};cols.forEach(([s])=>grp[s]=[]);
@@ -1225,7 +1272,7 @@ function vWH(){
   });
   document.getElementById('content').innerHTML=`
   <div class="page-header">
-    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">ออเดอร์ที่มี SO แล้ว ${list.length} รายการ</div></div>
+    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">No.350+ · มี SO แล้ว ${list.length} รายการ</div></div>
   </div>
   <div class="kanban">
   ${cols.map(([s,c])=>`
