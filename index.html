@@ -881,27 +881,19 @@ function showOrder(no){
       <svg viewBox="0 0 24 24" fill="none" stroke="${o.soOpened?'var(--green)':'var(--amber)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
       <span style="font-size:12px;font-weight:700;color:${o.soOpened?'var(--green)':'var(--amber)'};text-transform:uppercase;letter-spacing:.4px">${o.soOpened?'เปิด SO แล้ว':'รอเปิด SO'}</span>
     </div>
-    \${canSO?\`
-      <label class="check-row ${o.soOpened?'on':''}" style="margin-bottom:6px">
-        <input type="checkbox" ${o.soOpened?'checked':''} onchange="toggleSO(${o.no},this.checked)">
-        <span>เปิด SO แล้ว</span>
-      </label>
-      <div class="form-group" style="margin-bottom:6px">
-        <label class="form-label">เลข SO</label>
-        <input style="font-family:var(--mono);letter-spacing:.5px;font-size:14px" placeholder="SOIN26XXXXXX" value="${o.soNo||''}" onchange="updateSONo(${o.no},this.value)">
-      </div>
-      <button class="btn btn-success btn-sm" style="margin-bottom:10px;width:100%" onclick="saveSONo(${o.no})">💾 บันทึกเลข SO</button>
-      <div class="form-group">
-        <label class="form-label" style="color:var(--text3)">หมายเหตุ SO</label>
-        <textarea id="so-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับ SO…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveSONote(${o.no},this.value)">${o.soNote||''}</textarea>
-      </div>\`
-    :\`<div style="display:flex;flex-direction:column;gap:8px;padding:2px 0">
-        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:${o.soOpened?'var(--green)':'var(--text3)'}">${o.soNo||'ยังไม่มีเลข SO'}</span>
-        <div class="form-group">
-          <label class="form-label" style="color:var(--text3)">หมายเหตุ SO</label>
-          <textarea id="so-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับ SO…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveSONote(${o.no},this.value)">${o.soNote||''}</textarea>
-        </div>
-      </div>\`}
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2)">
+      <input type="checkbox" id="so-cb-${o.no}" ${o.soOpened?'checked':''} style="width:16px;height:16px;accent-color:var(--green);cursor:pointer" onchange="toggleSO(${o.no},this.checked)">
+      เปิด SO แล้ว
+    </label>
+    <div class="form-group" style="margin-bottom:6px">
+      <label class="form-label">เลข SO</label>
+      <input id="so-input-${o.no}" style="font-family:var(--mono);letter-spacing:.5px;font-size:14px" placeholder="SOIN26XXXXXX" value="${o.soNo||''}" onchange="updateSONo(${o.no},this.value)">
+    </div>
+    <button class="btn btn-success btn-sm" style="margin-bottom:10px;width:100%" onclick="saveSONo(${o.no})">💾 บันทึกเลข SO</button>
+    <div class="form-group">
+      <label class="form-label" style="color:var(--text3);font-weight:600">หมายเหตุ SO</label>
+      <textarea id="so-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับ SO…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveSONote(${o.no},this.value)">${o.soNote||''}</textarea>
+    </div>
   </div>
 
   <!-- Warehouse Block -->
@@ -910,28 +902,18 @@ function showOrder(no){
       <svg viewBox="0 0 24 24" fill="none" stroke="${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
       <span style="font-size:12px;font-weight:700;color:${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'};text-transform:uppercase;letter-spacing:.4px">สถานะคลัง${o.wStage?' — '+o.wStage:''}</span>
     </div>
-    \${canWH?\`
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">อัปเดตสถานะการจัดส่ง</div>
-      <div class="stage-pills" style="margin-bottom:10px">
-        \${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(s=>{
-          const cls=o.wStage===s?'sp-'+(s==='เปิดบิลแล้ว'?'open':s==='เตรียมของแล้ว'?'prep':'ship'):'';
-          return\`<button class="stage-pill \${cls}" style="font-size:13px;padding:8px 16px" onclick="setWS(${o.no},'\${s}')">\${s}</button>\`;
-        }).join('')}
-      </div>
-      <div class="form-group">
-        <label class="form-label" style="color:var(--text3)">หมายเหตุคลัง</label>
-        <textarea id="wh-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับการจัดส่ง…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveWHNote(${o.no},this.value)">${o.whNote||''}</textarea>
-      </div>\`
-    :\`<div style="display:flex;flex-direction:column;gap:8px;padding:2px 0">
-        \${o.wStage
-          ?\`<span style="font-weight:700;color:var(--green);font-size:13px">📦 ${o.wStage}</span>\`
-          :'<span style="font-size:13px;color:var(--text3)">รอสถานะจากคลัง</span>'}
-        <div class="form-group">
-          <label class="form-label" style="color:var(--text3)">หมายเหตุคลัง</label>
-          <textarea id="wh-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับการจัดส่ง…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveWHNote(${o.no},this.value)">${o.whNote||''}</textarea>
-        </div>
-      </div>\`}
-  </div>\`;
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(s=>{
+        const active=o.wStage===s;
+        const col=s==='จัดส่งแล้ว'?'var(--green)':s==='เตรียมของแล้ว'?'var(--amber)':'var(--blue)';
+        return '<button onclick="setWS('+o.no+',\''+s+'\')" style="padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid '+(active?col:'var(--border2)')+';background:'+(active?col:'#fff')+';color:'+(active?'#fff':'var(--text3)')+'">'+s+'</button>';
+      }).join('')}
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="color:var(--text3);font-weight:600">หมายเหตุคลัง</label>
+      <textarea id="wh-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับการจัดส่ง…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveWHNote(${o.no},this.value)">${o.whNote||''}</textarea>
+    </div>
+  </div>`
 
   document.getElementById('m-order-foot').innerHTML=`
   <button class="btn btn-ghost" onclick="editOrder(${o.no})">${icon('edit')} แก้ไข</button>
