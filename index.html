@@ -478,6 +478,8 @@ function parseReceiptsCSV(text){
       soOpened,
       soNo,
       wStage:(r[22]||'').trim(),
+      soNote:'',
+      whNote:'',
     });
   }
   return orders.reverse();
@@ -557,37 +559,37 @@ let ORDERS=[
    pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
    shipper:'Lalamove',shipTo:'แจ้งป้อมยาม บริษัท ไบโอแกรนด์ จำกัด เลขที่ 6 หมู่ที่ 2 ตำบล หน้าไม้ อำเภอลาดหลุมแก้ว ปทุมธานี 12140',
    shipDate:'12/06/2026',note:'ทำใบส่งของ 2 ฉบับ พร้อมลายเซ็นต์คนขับรถ + COA ให้โรงงาน',
-   soOpened:false,soNo:'',wStage:''},
+   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:''},
   {no:489,date:'10/06/2026',sale:'Golf',cust:'L030022 บจก. ไอ เฮิร์บ คอร์ปอเรชั่น',
    items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:100,price:160}],
    pay:'Cash',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample',
    shipper:'Lalamove',shipTo:'เลขที่ 896 898 ซอย รามคำแหง 64',shipDate:'15/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060027',wStage:'จัดส่งแล้ว'},
+   soOpened:true,soNo:'SOIN26060027',wStage:'จัดส่งแล้ว',soNote:'',whNote:''},
   {no:488,date:'09/06/2026',sale:'Pea',cust:'L030079 บจก. นอร์เบิร์ต อินโนเวชั่น',
    items:[{id:'100201000',name:'Pumpkin seed protein',qty:20,price:550}],
    pay:'Cash',payStatus:'ยังไม่ชำระ',po:'',
    shipper:'Lalamove',shipTo:'8/17 หมู่ที่ 8 ต.คลองสอง อ.คลองหลวง ปทุมธานี',shipDate:'12/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060025',wStage:'เตรียมของแล้ว'},
+   soOpened:true,soNo:'SOIN26060025',wStage:'เตรียมของแล้ว',soNote:'',whNote:''},
   {no:487,date:'09/06/2026',sale:'Oil',cust:'L030093 บจก.บียอนด์ แล็บโบราโทรี่',
    items:[{id:'400200301',name:'Brown Rice Protein 1kg',qty:1,price:590}],
    pay:'Cash',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample2',
    shipper:'Flash',shipTo:'555/121 บี อเวนิว วัชรพล ถ.สุขาภิบาล ๕ กรุงเทพ 10220',shipDate:'15/06/2026',note:'ขอใบแจ้งหนี้',
-   soOpened:false,soNo:'',wStage:''},
+   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:''},
   {no:486,date:'09/06/2026',sale:'Golf',cust:'L030015 บริษัท ฟอร์แคร์ อินโน จำกัด',
    items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160}],
    pay:'Credit',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample3',
    shipper:'ย้ายไปคลัง 4care',shipTo:'คลัง 4care',shipDate:'10/06/2026',note:'ทะยอยเรียกเข้า อย่างละ 500 kg.',
-   soOpened:true,soNo:'SOIN26060023',wStage:'เปิดบิลแล้ว'},
+   soOpened:true,soNo:'SOIN26060023',wStage:'เปิดบิลแล้ว',soNote:'',whNote:''},
   {no:485,date:'09/06/2026',sale:'Golf',cust:'บริษัท อินน็อกเซ่ลลา จำกัด',
    items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160},{id:'100203000',name:'Rice protein powder 600 mesh',qty:1000,price:250}],
    pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
    shipper:'Lalamove',shipTo:'CM Factory 91-819-3877 คุณฝน',shipDate:'11/06/2026',note:'',
-   soOpened:false,soNo:'',wStage:''},
+   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:''},
   {no:484,date:'08/06/2026',sale:'Golf',cust:'L030016 บริษัท ชาร์แมซ คอสเมด จำกัด',
    items:[{id:'100200500',name:'Peatides',qty:5,price:900}],
    pay:'Credit',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample4',
    shipper:'Lalamove',shipTo:'99/9 ถนน พุทธมณฑลสาย 4 กรุงเทพ',shipDate:'09/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060021',wStage:'จัดส่งแล้ว'},
+   soOpened:true,soNo:'SOIN26060021',wStage:'จัดส่งแล้ว',soNote:'',whNote:''},
 ];
 let runNo=491;
 
@@ -879,21 +881,27 @@ function showOrder(no){
       <svg viewBox="0 0 24 24" fill="none" stroke="${o.soOpened?'var(--green)':'var(--amber)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
       <span style="font-size:12px;font-weight:700;color:${o.soOpened?'var(--green)':'var(--amber)'};text-transform:uppercase;letter-spacing:.4px">${o.soOpened?'เปิด SO แล้ว':'รอเปิด SO'}</span>
     </div>
-    ${canSO?`
+    \${canSO?\`
       <label class="check-row ${o.soOpened?'on':''}" style="margin-bottom:6px">
         <input type="checkbox" ${o.soOpened?'checked':''} onchange="toggleSO(${o.no},this.checked)">
         <span>เปิด SO แล้ว</span>
       </label>
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:6px">
         <label class="form-label">เลข SO</label>
         <input style="font-family:var(--mono);letter-spacing:.5px;font-size:14px" placeholder="SOIN26XXXXXX" value="${o.soNo||''}" onchange="updateSONo(${o.no},this.value)">
       </div>
-      <button class="btn btn-success btn-sm" style="margin-top:8px;width:100%" onclick="saveSONo(${o.no})">💾 บันทึกเลข SO</button>`
-    :`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:4px 0">
-        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:${o.soOpened?'var(--green)':'var(--text3)'}">
-          ${o.soNo||'ยังไม่มีเลข SO'}
-        </span>
-      </div>`}
+      <button class="btn btn-success btn-sm" style="margin-bottom:10px;width:100%" onclick="saveSONo(${o.no})">💾 บันทึกเลข SO</button>
+      <div class="form-group">
+        <label class="form-label" style="color:var(--text3)">หมายเหตุ SO</label>
+        <textarea id="so-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับ SO…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveSONote(${o.no},this.value)">${o.soNote||''}</textarea>
+      </div>\`
+    :\`<div style="display:flex;flex-direction:column;gap:8px;padding:2px 0">
+        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:${o.soOpened?'var(--green)':'var(--text3)'}">${o.soNo||'ยังไม่มีเลข SO'}</span>
+        <div class="form-group">
+          <label class="form-label" style="color:var(--text3)">หมายเหตุ SO</label>
+          <textarea id="so-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับ SO…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveSONote(${o.no},this.value)">${o.soNote||''}</textarea>
+        </div>
+      </div>\`}
   </div>
 
   <!-- Warehouse Block -->
@@ -902,19 +910,28 @@ function showOrder(no){
       <svg viewBox="0 0 24 24" fill="none" stroke="${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
       <span style="font-size:12px;font-weight:700;color:${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'};text-transform:uppercase;letter-spacing:.4px">สถานะคลัง${o.wStage?' — '+o.wStage:''}</span>
     </div>
-    ${canWH?`
+    \${canWH?\`
       <div style="font-size:12px;color:var(--text2);margin-bottom:8px">อัปเดตสถานะการจัดส่ง</div>
-      <div class="stage-pills">
-        ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(s=>{
+      <div class="stage-pills" style="margin-bottom:10px">
+        \${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(s=>{
           const cls=o.wStage===s?'sp-'+(s==='เปิดบิลแล้ว'?'open':s==='เตรียมของแล้ว'?'prep':'ship'):'';
-          return`<button class="stage-pill ${cls}" style="font-size:13px;padding:8px 16px" onclick="setWS(${o.no},'${s}')">${s}</button>`;
+          return\`<button class="stage-pill \${cls}" style="font-size:13px;padding:8px 16px" onclick="setWS(${o.no},'\${s}')">\${s}</button>\`;
         }).join('')}
       </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--text3)">คลิกเพื่อเปลี่ยนสถานะ — บันทึกอัตโนมัติ</div>`
-    :`<div style="font-size:13px;color:var(--text2)">${o.wStage
-        ?`<span style="font-weight:700;color:var(--green)">📦 ${o.wStage}</span>`
-        :'รอสถานะจากคลัง'}</div>`}
-  </div>`;
+      <div class="form-group">
+        <label class="form-label" style="color:var(--text3)">หมายเหตุคลัง</label>
+        <textarea id="wh-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับการจัดส่ง…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveWHNote(${o.no},this.value)">${o.whNote||''}</textarea>
+      </div>\`
+    :\`<div style="display:flex;flex-direction:column;gap:8px;padding:2px 0">
+        \${o.wStage
+          ?\`<span style="font-weight:700;color:var(--green);font-size:13px">📦 ${o.wStage}</span>\`
+          :'<span style="font-size:13px;color:var(--text3)">รอสถานะจากคลัง</span>'}
+        <div class="form-group">
+          <label class="form-label" style="color:var(--text3)">หมายเหตุคลัง</label>
+          <textarea id="wh-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับการจัดส่ง…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveWHNote(${o.no},this.value)">${o.whNote||''}</textarea>
+        </div>
+      </div>\`}
+  </div>\`;
 
   document.getElementById('m-order-foot').innerHTML=`
   <button class="btn btn-ghost" onclick="editOrder(${o.no})">${icon('edit')} แก้ไข</button>
@@ -948,6 +965,17 @@ function setWS(no,s){
   const o=ORDERS.find(x=>x.no===no);o.wStage=s;
   showOrder(no);
   toast('📦 อัปเดต: '+s,'ok');sync('UPDATE_ORDER',o);
+}
+function saveSONote(no,val){
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  o.soNote=val.trim();
+  // ไม่ re-render เพื่อไม่ให้ textarea reset ขณะพิมพ์
+  sync('UPDATE_ORDER',o);
+}
+function saveWHNote(no,val){
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  o.whNote=val.trim();
+  sync('UPDATE_ORDER',o);
 }
 function setPrice(pid,origPrice,newPrice){
   if(!draft)return;
