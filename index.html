@@ -312,6 +312,7 @@ a:hover{text-decoration:underline}
 .toast.ok{border-left:3px solid var(--green)}
 .toast.err{border-left:3px solid var(--red)}
 
+@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:860px){
   .sidebar{display:none}
   .content-scroll{padding:14px}
@@ -372,6 +373,103 @@ a:hover{text-decoration:underline}
 
 <script>
 const GAS_URL='YOUR_APPS_SCRIPT_URL_HERE';
+
+// ── RECEIPTS CSV URL ──────────────────────────
+// วิธีได้ URL: Google Sheets → File → Share → Publish to web
+//   → เลือก sheet "receipts" → CSV → Copy link แล้วแทนที่ด้านล่าง
+const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXcauzirmrhkUV86lN3C_uZZI33zhPJ-4f0ufqZOBPoOK_pwSjtmibCDd0ucZWohKAHiy4KMvOhu1b/pub?gid=1734187699&single=true&output=csv';
+
+function parseCSV(text){
+  const rows=[];
+  for(const line of text.replace(/\r/g,'').split('\n')){
+    if(!line.trim())continue;
+    const cols=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+      else{cur+=c;}
+    }
+    cols.push(cur.trim());
+    rows.push(cols);
+  }
+  return rows;
+}
+
+function parseReceiptsCSV(text){
+  const rows=parseCSV(text);
+  if(rows.length<2)return[];
+  const hdr=rows[0].map(h=>h.toLowerCase().trim());
+  const col=(...kws)=>{for(const kw of kws){const i=hdr.findIndex(h=>h.includes(kw));if(i>=0)return i;}return -1;};
+  const iNo=col('no.','no ','#'); 
+  const iDate=col('วัน','date');
+  const iSale=col('sale');
+  const iCust=col('บริษัท','ลูกค้า','cust','company');
+  const iItems=col('รายการ','วัตถุดิบ','item','product','สินค้า');
+  const iQty=col('จำนวน','qty');
+  const iPrice=col('ราคา','price');
+  const iPay=col('การชำระ','ชำระเงิน','payment');
+  const iPO=col('link','po');
+  const iPaySt=col('สถานะชำระ','สถานะ','pay status');
+  const iShipper=col('ขนส่ง','shipper','carrier');
+  const iShipTo=col('จัดส่งที่','address','ที่อยู่');
+  const iShipDt=col('ต้องการ','ship date','delivery');
+  const iNote=col('หมายเหตุ','note','remark');
+  const iSOOpen=col('so_opened','soopened','เปิด so');
+  const iSONo=col('so_no','sono','เลข so','soin');
+  const iWStage=col('wstage','w_stage','สถานะคลัง');
+  const orders=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    const noRaw=iNo>=0?r[iNo]:'';
+    if(!noRaw||!noRaw.trim())continue;
+    const inames=iItems>=0?String(r[iItems]||'').split('|').map(s=>s.trim()).filter(Boolean):[];
+    const iqtys=iQty>=0?String(r[iQty]||'').split('|').map(s=>+s.replace(/,/g,'')||0):[];
+    const iprices=iPrice>=0?String(r[iPrice]||'').split('|').map(s=>+s.replace(/,/g,'')||0):[];
+    const items=inames.length>0
+      ?inames.map((name,idx)=>({id:'',name,qty:iqtys[idx]||0,price:iprices[idx]||0}))
+      :(r[iItems]?[{id:'',name:String(r[iItems]),qty:iQty>=0?+String(r[iQty]||0).replace(/,/g,''):0,price:iPrice>=0?+String(r[iPrice]||0).replace(/,/g,''):0}]:[]);
+    const soOpened=iSOOpen>=0&&['true','1','✓','yes','TRUE'].includes(String(r[iSOOpen]||'').trim());
+    orders.push({
+      no:parseInt(String(noRaw).replace(/\D/g,''))||i,
+      date:iDate>=0?String(r[iDate]||''):'',
+      sale:iSale>=0?String(r[iSale]||''):'',
+      cust:iCust>=0?String(r[iCust]||''):'',
+      items,
+      pay:iPay>=0?String(r[iPay]||''):'',
+      po:iPO>=0?String(r[iPO]||''):'',
+      payStatus:iPaySt>=0?String(r[iPaySt]||'ยังไม่ชำระ'):'ยังไม่ชำระ',
+      shipper:iShipper>=0?String(r[iShipper]||''):'',
+      shipTo:iShipTo>=0?String(r[iShipTo]||''):'',
+      shipDate:iShipDt>=0?String(r[iShipDt]||''):'',
+      note:iNote>=0?String(r[iNote]||''):'',
+      soOpened,
+      soNo:iSONo>=0?String(r[iSONo]||''):'',
+      wStage:iWStage>=0?String(r[iWStage]||''):'',
+    });
+  }
+  return orders.reverse();
+}
+
+let ordersLoaded=false;
+async function loadOrdersCSV(){
+  if(CSV_RECEIPTS==='PASTE_RECEIPTS_CSV_URL_HERE')return false;
+  try{
+    const r=await fetch(CSV_RECEIPTS+'&_t='+Date.now());
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const text=await r.text();
+    if(text.trim().startsWith('<!'))throw new Error('Sheet not published yet');
+    const parsed=parseReceiptsCSV(text);
+    if(parsed.length===0)throw new Error('0 rows parsed');
+    ORDERS=parsed;
+    runNo=Math.max(...ORDERS.map(o=>o.no),490)+1;
+    ordersLoaded=true;
+    return true;
+  }catch(e){
+    console.warn('loadOrdersCSV:',e.message);
+    return false;
+  }
+}
 
 // ── DATA ──────────────────────────────────────
 let PRODUCTS=[
@@ -616,6 +714,21 @@ function vDash(){
 }
 
 function vOrders(){
+  // โหลด CSV ถ้ายังไม่ได้โหลด
+  if(!ordersLoaded && CSV_RECEIPTS!=='PASTE_RECEIPTS_CSV_URL_HERE'){
+    document.getElementById('content').innerHTML=`
+    <div class="page-header"><div><div class="page-title">รายการออเดอร์</div></div></div>
+    <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;flex-direction:column;gap:14px">
+      <div style="width:40px;height:40px;border:3px solid var(--green-mid);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
+      <div style="font-size:14px;color:var(--text2)">กำลังโหลดออเดอร์จาก Google Sheets…</div>
+    </div>`;
+    loadOrdersCSV().then(ok=>{
+      if(ok){toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');}
+      else{toast('โหลดไม่สำเร็จ — ใช้ข้อมูล demo','err');}
+      vOrders();
+    });
+    return;
+  }
   let list=[...ORDERS];
   if(sq)list=list.filter(o=>(o.no+''+o.cust+o.sale+(o.soNo||'')).toLowerCase().includes(sq));
   if(fSale!=='ทั้งหมด')list=list.filter(o=>o.sale===fSale);
