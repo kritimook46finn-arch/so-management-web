@@ -1271,11 +1271,11 @@ function vNew(){
               ${['Lalamove','ลูกค้ามารับเอง','By Sale','ย้ายไปคลัง 4care'].map(s=>`<option ${draft.shipper===s?'selected':''}>${s}</option>`).join('')}
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group span2">
             <label class="form-label">วันที่ต้องการส่ง</label>
             <input type="date" value="${draft.shipDate}" onchange="draft.shipDate=this.value">
           </div>
-          <div class="form-group">
+          <div class="form-group span2">
             <label class="form-label">Link PO</label>
             <input placeholder="https://drive.google.com/…" value="${draft.po}" oninput="draft.po=this.value">
           </div>
