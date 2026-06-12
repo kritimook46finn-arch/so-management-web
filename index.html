@@ -966,9 +966,18 @@ function saveSONo(no){
   sync('UPDATE_ORDER',o);renderShell();
 }
 function setWS(no,s){
-  const o=ORDERS.find(x=>x.no===no);o.wStage=s;
-  showOrder(no);
-  toast('📦 อัปเดต: '+s,'ok');sync('UPDATE_ORDER',o);
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  // กดซ้ำที่สถานะเดิม = ยกเลิก (toggle off)
+  if(o.wStage===s){
+    o.wStage='';
+    showOrder(no);
+    toast('↩ ยกเลิกสถานะ: '+s,'ok');
+  } else {
+    o.wStage=s;
+    showOrder(no);
+    toast('📦 อัปเดต: '+s,'ok');
+  }
+  sync('UPDATE_ORDER',o);
 }
 function saveSONote(no,val){
   const o=ORDERS.find(x=>x.no===no);if(!o)return;
