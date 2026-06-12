@@ -412,7 +412,7 @@ a:hover{text-decoration:underline}
 </div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbwZjHr_NdjhhpnuQddK8SOaPTi4g6yJfb1M_pG4HACYw6ufjdMl7XfwYrO5xfiJ11Zb/exec';
+const GAS_URL='https://script.google.com/macros/s/AKfycbyq42KiC_Ot4wTLxiM2sgSTbOQ-dbg6qFERaXOWHb_4be1BHU7crwPQK9iFrsM1w3I_/exec';
 
 // ── RECEIPTS CSV URL ──────────────────────────
 const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXcauzirmrhkUV86lN3C_uZZI33zhPJ-4f0ufqZOBPoOK_pwSjtmibCDd0ucZWohKAHiy4KMvOhu1b/pub?gid=1734187699&single=true&output=csv';
@@ -498,17 +498,19 @@ let ordersLoaded=false;
 // ใช้เมื่อมี GAS_URL — อ่านตรงจาก Sheet ไม่มี cache
 async function loadOrdersGAS(){
   try{
-    const res=await fetch(GAS_URL+'?action=GET_ORDERS&_t='+Date.now(),{
-      redirect:'follow',
-    });
+    const url=GAS_URL+'?action=GET_ORDERS&_nc='+Date.now();
+    console.log('[loadGAS] fetching...');
+    const res=await fetch(url,{redirect:'follow'});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const json=await res.json();
     if(!json.ok)throw new Error(json.error||'GAS error');
-    if(!json.data||json.data.length===0)throw new Error('0 rows');
+    if(!json.data||json.data.length===0)throw new Error('0 rows from GAS');
+    const maxNo=Math.max(...json.data.map(o=>o.no||0));
+    console.log('[loadGAS] got '+json.data.length+' orders, max No='+maxNo);
     ORDERS=filterDeleted(json.data);
     return true;
   }catch(e){
-    console.warn('[loadGAS]',e.message);
+    console.warn('[loadGAS] FAILED:',e.message,'→ fallback CSV');
     return false;
   }
 }
@@ -846,9 +848,14 @@ async function vOrders(){
     const useGAS=GAS_URL&&GAS_URL!=='YOUR_APPS_SCRIPT_URL_HERE';
     let ok=false;
     try{
+      console.log('[vOrders] loading, useGAS='+useGAS);
       if(useGAS) ok=await loadOrdersGAS();
-      if(!ok)    ok=await loadOrdersCSV();
+      if(!ok){
+        console.log('[vOrders] GAS failed, trying CSV...');
+        ok=await loadOrdersCSV();
+      }
     }catch(e){ console.warn('load error:',e); }
+    console.log('[vOrders] loaded ok='+ok+' orders='+ORDERS.length);
 
     ordersLoaded=true; // set ก่อน render เสมอ
 
