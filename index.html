@@ -609,6 +609,7 @@ const USERS={
 const LOGIN_PASS='insorder2026';
 const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
 let role=null,userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
+let pendingOrders=new Set(); // No. ที่สร้างใหม่ยังรอ save ไป Sheet
 
 // ── DELETED NOs (localStorage) ────────────────
 // เก็บ No. ที่ผู้ใช้ลบไว้ใน localStorage
@@ -824,7 +825,15 @@ function vOrders(){
   document.getElementById('content').innerHTML=`
   <div class="page-header">
     <div><div class="page-title">รายการออเดอร์</div><div class="page-sub">${list.length} จาก ${ORDERS.length} รายการ</div></div>
-    ${role==='sale'?`<button class="btn btn-primary" onclick="nav('new-order')">${icon('plus')} สร้างใหม่</button>`:''}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      ${pendingOrders.size>0?`
+      <button class="btn" onclick="batchSaveOrders()" style="background:#F59E0B;color:#fff;font-size:13px;font-weight:700;gap:8px;position:relative">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกรายการ
+        <span style="position:absolute;top:-7px;right:-7px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 6px;min-width:18px;text-align:center">${pendingOrders.size}</span>
+      </button>`:''}
+      <button class="btn btn-primary" onclick="nav('new-order')">${icon('plus')} สร้างใหม่</button>
+    </div>
   </div>
   <div class="filter-row">
     ${['ทั้งหมด','Golf','Pea','Oil'].map(s=>`<button class="filter-chip ${fSale===s?'active':''}" onclick="fSale='${s}';render(false)">${s}</button>`).join('')}
@@ -843,7 +852,7 @@ function vOrders(){
     <th>Pipeline</th><th>ชำระ</th><th>SO</th><th style="text-align:right">ยอด</th><th></th>
   </tr></thead>
   <tbody>${list.length===0?`<tr><td colspan="9"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`:
-  list.map(o=>`<tr onclick="showOrder(${o.no})">
+  list.map(o=>`<tr onclick="showOrder(${o.no})" style="${pendingOrders.has(o.no)?'background:#FFFBEB;':''}">
     <td><span class="order-no">${o.no}</span></td>
     <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
     <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
@@ -1279,12 +1288,57 @@ function saveOrder(){
     const d=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()}`;
     const o={...draft,no,date:d,items,soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''};
     ORDERS.unshift(o);
+    pendingOrders.add(no);  // เพิ่มเข้า pending รอ batch save
     draft=null;
-    toast(`สร้างออเดอร์ No.${no} แล้ว`,'ok');
-    sync('NEW_ORDER',o);
+    toast(`เพิ่มออเดอร์ No.${no} — กด "บันทึกรายการ" เพื่อส่งไป Sheet`,'ok');
   }
   nav('orders');
 }
+// ── BATCH SAVE ──────────────────────────────
+async function batchSaveOrders(){
+  if(pendingOrders.size===0){toast('ไม่มีรายการรอบันทึก','err');return;}
+  if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    toast('ยังไม่ได้ตั้ง GAS_URL','err');return;
+  }
+
+  const btn=document.querySelector('button[onclick="batchSaveOrders()"]');
+  if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก…';}
+
+  const toSave=[...pendingOrders];
+  let success=0, fail=0;
+
+  for(const no of toSave){
+    const o=ORDERS.find(x=>x.no===no);
+    if(!o){pendingOrders.delete(no);continue;}
+    try{
+      const res=await fetch(GAS_URL,{
+        method:'POST',
+        redirect:'follow',
+        body:JSON.stringify({action:'NEW_ORDER',data:o}),
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+      });
+      const json=await res.json().catch(()=>({}));
+      if(json.ok){
+        pendingOrders.delete(no);
+        success++;
+      } else {
+        console.warn('[batch] GAS error No.'+no+':',json.error);
+        fail++;
+      }
+    }catch(e){
+      console.warn('[batch] fetch error:',e.message);
+      fail++;
+    }
+  }
+
+  render(false); // refresh เพื่ออัปเดตปุ่มและ highlight
+  if(fail===0){
+    toast(`✅ บันทึก ${success} รายการสำเร็จ`,'ok');
+  } else {
+    toast(`บันทึกสำเร็จ ${success} / ล้มเหลว ${fail} รายการ`,'err');
+  }
+}
+
 function editOrder(no){
   const o=ORDERS.find(x=>x.no===no);
   draft={
