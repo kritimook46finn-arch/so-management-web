@@ -412,7 +412,7 @@ a:hover{text-decoration:underline}
 </div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbzg8stQcmlWklPja65H2ORtOaRQ-qQ5yvTUKv-MtbQUkgTLa9GcpUBFq9ijCv9BiPaj/exec';
+const GAS_URL='YOUR_APPS_SCRIPT_URL_HERE';
 
 // ── RECEIPTS CSV URL ──────────────────────────
 const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXcauzirmrhkUV86lN3C_uZZI33zhPJ-4f0ufqZOBPoOK_pwSjtmibCDd0ucZWohKAHiy4KMvOhu1b/pub?gid=1734187699&single=true&output=csv';
@@ -1394,23 +1394,30 @@ function vWH(){
 // ── SYNC ──────────────────────────────────────
 async function sync(action,data){
   if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
-    console.log('[sync] GAS_URL not set — offline mode');
+    console.log('[sync] offline mode — GAS_URL not set');
     return;
   }
   try{
+    // GAS Web App ต้องการ redirect:'follow' เพราะ redirect 302 ก่อนส่ง response
     const res=await fetch(GAS_URL,{
       method:'POST',
+      redirect:'follow',
       body:JSON.stringify({action,data}),
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
     });
-    const json=await res.json().catch(()=>({}));
+    const text=await res.text();
+    let json={};
+    try{json=JSON.parse(text);}catch(e){
+      console.warn('[sync] non-JSON response:',text.substring(0,100));
+      return;
+    }
     if(json.ok===false){
-      console.warn('[sync] server error:',json.error);
-      toast('Sync error: '+json.error,'err');
+      console.warn('[sync] GAS error:',json.error);
+    } else {
+      console.log('[sync] ok:',action,json);
     }
   }catch(e){
-    console.warn('[sync] fetch failed:',e.message);
-    // ไม่แสดง toast เพื่อไม่รบกวน UX — ดู console แทน
+    console.warn('[sync] fetch error:',e.message);
   }
 }
 </script>
