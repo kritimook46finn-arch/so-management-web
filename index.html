@@ -412,7 +412,7 @@ a:hover{text-decoration:underline}
 </div>
 
 <script>
-const GAS_URL='YOUR_APPS_SCRIPT_URL_HERE';
+const GAS_URL='https://script.google.com/macros/s/AKfycbzg8stQcmlWklPja65H2ORtOaRQ-qQ5yvTUKv-MtbQUkgTLa9GcpUBFq9ijCv9BiPaj/exec';
 
 // ── RECEIPTS CSV URL ──────────────────────────
 const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXcauzirmrhkUV86lN3C_uZZI33zhPJ-4f0ufqZOBPoOK_pwSjtmibCDd0ucZWohKAHiy4KMvOhu1b/pub?gid=1734187699&single=true&output=csv';
@@ -1393,9 +1393,25 @@ function vWH(){
 
 // ── SYNC ──────────────────────────────────────
 async function sync(action,data){
-  if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE')return;
-  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action,data}),headers:{'Content-Type':'application/json'},mode:'no-cors'})}
-  catch(e){console.warn('sync failed',e)}
+  if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    console.log('[sync] GAS_URL not set — offline mode');
+    return;
+  }
+  try{
+    const res=await fetch(GAS_URL,{
+      method:'POST',
+      body:JSON.stringify({action,data}),
+      headers:{'Content-Type':'application/json'},
+    });
+    const json=await res.json().catch(()=>({}));
+    if(json.ok===false){
+      console.warn('[sync] server error:',json.error);
+      toast('Sync error: '+json.error,'err');
+    }
+  }catch(e){
+    console.warn('[sync] fetch failed:',e.message);
+    // ไม่แสดง toast เพื่อไม่รบกวน UX — ดู console แทน
+  }
 }
 </script>
 </body>
