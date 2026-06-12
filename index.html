@@ -623,7 +623,18 @@ function removeDeletedNo(no){
 function filterDeleted(orders){
   const del=getDeletedNos();
   if(del.length===0)return orders;
-  return orders.filter(o=>!del.includes(+o.no));
+
+  // ถ้า No. ที่ "ถูกลบ" กลับมาใน GAS อีกครั้ง
+  // แสดงว่า Sheet ยังมีอยู่ (อาจลบผิด หรือ delete ไม่สำเร็จ)
+  // → ลบออกจาก localStorage เพื่อให้แสดงผล
+  const returnedFromSheet = orders.map(o=>+o.no);
+  const stillDeleted = del.filter(n=>!returnedFromSheet.includes(n));
+  if(stillDeleted.length !== del.length){
+    try{localStorage.setItem('ins_deleted_nos',JSON.stringify(stillDeleted));}catch(e){}
+    console.log('[filterDeleted] auto-restored:',del.filter(n=>returnedFromSheet.includes(n)));
+  }
+
+  return orders.filter(o=>!stillDeleted.includes(+o.no));
 }
 
 // ── HELPERS ───────────────────────────────────
@@ -847,7 +858,6 @@ async function vOrders(){
         บันทึกรายการ
         <span style="position:absolute;top:-7px;right:-7px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 6px;min-width:18px;text-align:center">${pendingOrders.size}</span>
       </button>`:''}
-      <button class="btn btn-primary" onclick="nav('new-order')" style="background:var(--surface2);color:var(--text2);border:1.5px solid var(--border2)">${icon('plus')} สร้างใหม่</button>
       <button class="btn btn-primary" onclick="syncSheet()" id="sync-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Sync Sheet
