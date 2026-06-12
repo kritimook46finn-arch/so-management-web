@@ -916,10 +916,21 @@ function showOrder(no){
         return '<button onclick="setWS('+o.no+',\''+s+'\')" style="padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid '+(active?col:'var(--border2)')+';background:'+(active?col:'#fff')+';color:'+(active?'#fff':'var(--text3)')+'">'+s+'</button>';
       }).join('')}
     </div>
-    ${o.billDocNo?`<div style="margin-bottom:8px;padding:8px 10px;background:var(--blue-soft);border-radius:var(--r-sm);border:1px solid rgba(37,99,235,.15)">
-      <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">เลขเอกสารเปิดบิล (คลัง)</div>
-      <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--blue)">${o.billDocNo}</div>
-    </div>`:''}
+    <div class="form-group" style="margin-bottom:8px">
+      <label class="form-label" style="font-size:11px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.4px">
+        📋 เลขเอกสารเปิดบิล (คลัง)
+      </label>
+      <div style="display:flex;gap:6px">
+        <input id="bill-doc-${o.no}"
+          style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--blue);border-color:rgba(37,99,235,.3);background:var(--blue-soft);flex:1"
+          placeholder="เช่น IV26060014"
+          value="${o.billDocNo||''}">
+        <button class="btn btn-sm" onclick="saveBillDocNo(${o.no})"
+          style="background:var(--blue);color:#fff;white-space:nowrap;padding:6px 12px;flex-shrink:0">
+          บันทึก
+        </button>
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label" style="color:var(--text3);font-weight:600">หมายเหตุคลัง</label>
       <textarea id="wh-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับการจัดส่ง…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveWHNote(${o.no},this.value)">${o.whNote||''}</textarea>
@@ -969,6 +980,16 @@ function saveWHNote(no,val){
   const o=ORDERS.find(x=>x.no===no);if(!o)return;
   o.whNote=val.trim();
   sync('UPDATE_ORDER',o);
+}
+function saveBillDocNo(no){
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  const inp=document.getElementById('bill-doc-'+no);
+  if(!inp)return;
+  o.billDocNo=inp.value.trim();
+  // อัปเดต kanban card ที่แสดงอยู่ด้วย (ถ้า vWH เปิดอยู่)
+  toast('📋 บันทึกเลขเอกสาร: '+(o.billDocNo||'(ล้างค่า)'),'ok');
+  sync('UPDATE_ORDER',o);
+  // re-render sidebar badge ไม่เปลี่ยน ไม่ต้อง renderShell
 }
 function setPrice(pid,origPrice,newPrice){
   if(!draft)return;
@@ -1312,7 +1333,7 @@ function vWH(){
           <span style="font-size:10px;color:var(--text3);white-space:nowrap">${o.date}</span>
         </div>
         <div class="kanban-card-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
-        ${(o.billDocNo||o.soNo)?`<div class="kanban-card-bill">${o.billDocNo||o.soNo}</div>`:''}
+        ${o.billDocNo?`<div class="kanban-card-bill">${o.billDocNo}</div>`:''}
         <div class="kanban-card-meta">
           <span class="kanban-card-date">${o.shipDate?'ส่ง '+o.shipDate:''}</span>
           <div class="kanban-card-btns">
