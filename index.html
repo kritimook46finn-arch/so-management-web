@@ -761,7 +761,7 @@ function doLogout(){
 
 // ── SHELL ─────────────────────────────────────
 function renderShell(){
-  const pending=ORDERS.filter(o=>!o.soOpened&&o.no>=350).length;
+  const pending=ORDERS.filter(o=>!o.soOpened).length;
   const items=[
     {k:'orders',l:'รายการออเดอร์',i:'list'},
     {k:'new-order',l:'สร้างออเดอร์',i:'plus'},
@@ -880,7 +880,11 @@ async function vOrders(){
         บันทึกรายการ
         <span style="position:absolute;top:-7px;right:-7px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 6px;min-width:18px;text-align:center">${pendingOrders.size}</span>
       </button>`:''}
-      <button class="btn btn-primary" onclick="nav('new-order')">${icon('plus')} สร้างใหม่</button>
+      <button class="btn btn-primary" onclick="nav('new-order')" style="background:var(--surface2);color:var(--text2);border:1.5px solid var(--border2)">${icon('plus')} สร้างใหม่</button>
+      <button class="btn btn-primary" onclick="syncSheet()" id="sync-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Sync Sheet
+      </button>
     </div>
   </div>
   <div class="filter-row">
@@ -1342,6 +1346,27 @@ function saveOrder(){
   }
   nav('orders');
 }
+// ── SYNC SHEET ───────────────────────────────
+async function syncSheet(){
+  if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    toast('ยังไม่ได้ตั้ง GAS_URL','err');return;
+  }
+  const btn=document.getElementById('sync-btn');
+  if(btn){btn.disabled=true;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;animation:spin .7s linear infinite"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> กำลัง Sync...';}
+  try{
+    const ok=await loadOrdersGAS();
+    if(ok){
+      ordersLoaded=true;
+      toast('✅ Sync สำเร็จ — '+ORDERS.length+' รายการ','ok');
+    } else {
+      toast('Sync ไม่สำเร็จ','err');
+    }
+  }catch(e){
+    toast('Sync error: '+e.message,'err');
+  }
+  if(view==='orders'){vOrders();}
+}
+
 // ── BATCH SAVE ──────────────────────────────
 async function batchSaveOrders(){
   if(pendingOrders.size===0){toast('ไม่มีรายการรอบันทึก','err');return;}
@@ -1368,6 +1393,14 @@ async function batchSaveOrders(){
       const json=await res.json().catch(()=>({}));
       if(json.ok){
         pendingOrders.delete(no);
+        // ถ้า GAS คืน No. จริง (อาจต่างจาก No. เว็บสร้าง)
+        // อัปเดต ORDERS ให้ใช้ No. จาก GAS
+        const realNo=json.created;
+        if(realNo && realNo!==no){
+          const idx=ORDERS.findIndex(x=>x.no===no);
+          if(idx>=0)ORDERS[idx]={...ORDERS[idx],no:realNo};
+          console.log('[batch] No.'+no+' → GAS assigned No.'+realNo);
+        }
         success++;
       } else {
         console.warn('[batch] GAS error No.'+no+':',json.error);
@@ -1559,7 +1592,7 @@ function vWH(){
   });
   document.getElementById('content').innerHTML=`
   <div class="page-header">
-    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">No.350+ · มี SO แล้ว ${list.length} รายการ</div></div>
+    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">มีเลขเอกสารเปิดบิล (คลัง) แล้ว ${list.filter(o=>o.billDocNo).length} รายการ</div></div>
   </div>
   <div class="kanban">
   ${cols.map(([s,col])=>`
