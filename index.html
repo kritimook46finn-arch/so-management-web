@@ -319,11 +319,83 @@ a:hover{text-decoration:underline}
 .toast.err{border-left:3px solid var(--red)}
 
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:860px){
-  .sidebar{display:none}
-  .content-scroll{padding:14px}
+
+/* ── MOBILE BOTTOM NAV ── */
+.mobile-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#111827;border-top:1px solid rgba(255,255,255,.1);
+  padding:0 0 env(safe-area-inset-bottom,0);
+  flex-direction:row;
+}
+.mobile-nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;padding:10px 4px;
+  font-size:10px;font-weight:600;color:rgba(255,255,255,.45);
+  border:none;background:none;cursor:pointer;transition:color .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.mobile-nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.75}
+.mobile-nav-btn.active{color:var(--green)}
+.mobile-nav-badge{
+  position:absolute;top:6px;right:calc(50% - 18px);
+  background:var(--red);color:#fff;font-size:9px;font-weight:800;
+  border-radius:99px;padding:1px 5px;min-width:16px;text-align:center;
+}
+
+@media(max-width:768px){
+  /* ซ่อน sidebar ปกติ แสดง bottom nav แทน */
+  .sidebar{display:none !important}
+  .mobile-nav{display:flex}
+
+  /* content เพิ่ม padding bottom ให้พ้น bottom nav */
+  .content-scroll{padding:12px 12px 80px}
+
+  /* topbar บนมือถือ */
+  .topbar{padding:0 12px;height:48px}
+  .topbar-title{font-size:14px}
+  .topbar-search{max-width:none;flex:1}
+  .topbar-search input{font-size:13px}
+
+  /* ตาราง order — เฉพาะ mobile แสดง 4 col เท่านั้น */
+  .order-table{font-size:12px}
+  .order-table th,.order-table td{padding:8px 6px}
+  /* ซ่อนคอลัมน์ที่ไม่จำเป็นบน mobile */
+  .col-hide-mobile{display:none !important}
+
+  /* วันที่ — ไม่ wrap */
+  .order-date{font-size:11px;white-space:nowrap}
+
+  /* page header */
+  .page-header{margin-bottom:12px;gap:8px}
+  .page-title{font-size:17px}
+
+  /* filter chips */
+  .filter-row{gap:5px}
+  .filter-chip{font-size:11px;padding:4px 10px}
+
+  /* form */
   .form-grid{grid-template-columns:1fr}
   .field-grid2{grid-template-columns:1fr}
+
+  /* modal full screen on mobile */
+  .modal-overlay{padding:0;align-items:flex-end}
+  .modal-box{
+    max-width:100% !important;
+    border-radius:16px 16px 0 0;
+    max-height:92vh;
+  }
+
+  /* SO page 2-col → 1 col stack */
+  .so-two-col{grid-template-columns:1fr !important}
+
+  /* kanban scroll horizontal */
+  .kanban{display:flex;flex-direction:row;overflow-x:auto;gap:10px;padding-bottom:4px}
+  .kanban-col{min-width:260px;flex-shrink:0}
+  .kanban-body{max-height:400px}
+
+  /* sync btn */
+  .btn{font-size:12px;padding:7px 12px}
 }
 </style>
 </head>
@@ -394,6 +466,9 @@ a:hover{text-decoration:underline}
 </div>
 
 <div class="toast-area" id="toasts"></div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav" id="mobile-nav"></nav>
 
 <!-- DELETE CONFIRM MODAL -->
 <div class="modal-overlay" id="m-delete" onclick="if(event.target===this)closeModal('m-delete')">
@@ -746,6 +821,7 @@ function renderShell(){
     {k:'warehouse',l:'สถานะคลัง',i:'warehouse'},
     {k:'products',l:'รายการสินค้า',i:'box'},
   ];
+  _renderMobileNav(items, pending);
   document.getElementById('sidebar').innerHTML=`
   <div class="sidebar-brand">
     <div class="brand-icon">${icon('pulse')}</div>
@@ -760,8 +836,25 @@ function renderShell(){
 }
 
 // ── NAVIGATION ────────────────────────────────
+function _renderMobileNav(items, pending){
+  const mn=document.getElementById('mobile-nav');
+  if(!mn)return;
+  // แสดงแค่ 5 เมนูหลัก
+  const show=items.slice(0,5);
+  mn.innerHTML=show.map(x=>`
+  <button class="mobile-nav-btn ${view===x.k?'active':''}" onclick="nav('${x.k}')" style="position:relative">
+    ${icon(x.i)}
+    <span>${x.l}</span>
+    ${x.badge?`<span class="mobile-nav-badge">${x.badge}</span>`:''}
+  </button>`).join('');
+}
+
 function nav(v){
   view=v;sq='';if(v!=='new-order')prodSq='';if(v!=='so-manage'){fSOStatus='ทั้งหมด';fSOSale='ทั้งหมด';}
+  // อัปเดต active state บน mobile nav
+  document.querySelectorAll('.mobile-nav-btn').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('onclick')===`nav('${v}')`);
+  });
   document.getElementById('search-input').value='';
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const nb=document.getElementById('nb-'+v);if(nb)nb.classList.add('active');
@@ -877,8 +970,15 @@ async function vOrders(){
     <col style="width:88px"><col style="width:120px"><col style="width:82px"><col style="width:36px">
   </colgroup>
   <thead><tr>
-    <th>No.</th><th>วันที่</th><th>Sale</th><th>ลูกค้า</th>
-    <th>Pipeline</th><th>ชำระ</th><th>SO</th><th style="text-align:right">ยอด</th><th></th>
+    <th>No.</th>
+    <th class="col-hide-mobile">วันที่</th>
+    <th>Sale</th>
+    <th>ลูกค้า</th>
+    <th class="col-hide-mobile">Pipeline</th>
+    <th class="col-hide-mobile">ชำระ</th>
+    <th class="col-hide-mobile">SO</th>
+    <th style="text-align:right">ยอด</th>
+    <th></th>
   </tr></thead>
   <tbody>${list.length===0?`<tr><td colspan="9"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`:
   list.map(o=>`<tr onclick="showOrder(${o.no})" style="${pendingOrders.has(o.no)?'background:#FFFBEB;':''}">
@@ -1541,7 +1641,7 @@ function vSO(){
   ${filtered.length===0?`<div class="empty-state">${icon('doc')}<div class="et">ไม่พบออเดอร์ที่ตรงเงื่อนไข</div></div>`:''}
 
   <!-- 2-column layout: รอเปิด ซ้าย | เปิดแล้ว ขวา -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+  <div class="so-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
 
     <!-- ซ้าย: รอเปิด SO -->
     <div>
