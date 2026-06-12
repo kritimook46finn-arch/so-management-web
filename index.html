@@ -412,7 +412,7 @@ a:hover{text-decoration:underline}
 </div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbwpDibAGed4-A8msnzgigQgoB1E6tQEgFo5EWr_nSCCEeyEEkRzW6vZGL88ULaW_VYF/exec';
+const GAS_URL='YOUR_APPS_SCRIPT_URL_HERE';
 
 // ── RECEIPTS CSV URL ──────────────────────────
 const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXcauzirmrhkUV86lN3C_uZZI33zhPJ-4f0ufqZOBPoOK_pwSjtmibCDd0ucZWohKAHiy4KMvOhu1b/pub?gid=1734187699&single=true&output=csv';
@@ -493,6 +493,26 @@ function parseReceiptsCSV(text){
 }
 
 let ordersLoaded=false;
+
+// ── LOAD FROM GAS (realtime, no cache) ──────
+// ใช้เมื่อมี GAS_URL — อ่านตรงจาก Sheet ไม่มี cache
+async function loadOrdersGAS(){
+  try{
+    const res=await fetch(GAS_URL+'?action=GET_ORDERS&_t='+Date.now(),{
+      redirect:'follow',
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const json=await res.json();
+    if(!json.ok)throw new Error(json.error||'GAS error');
+    if(!json.data||json.data.length===0)throw new Error('0 rows');
+    ORDERS=filterDeleted(json.data);
+    return true;
+  }catch(e){
+    console.warn('[loadGAS]',e.message);
+    return false;
+  }
+}
+
 async function loadOrdersCSV(){
   try{
     const r=await fetch(CSV_RECEIPTS+'&_nc='+Date.now());
@@ -809,17 +829,33 @@ function vDash(){
 }
 
 function vOrders(){
-  // โหลด CSV ถ้ายังไม่ได้โหลด
-  if(!ordersLoaded && CSV_RECEIPTS!=='PASTE_RECEIPTS_CSV_URL_HERE'){
+  // โหลดข้อมูลใหม่จาก Sheet ทุกครั้ง (realtime)
+  // ยกเว้นถ้ามี pending orders ที่ยังไม่ได้ save (ไม่ reload เพื่อไม่ทำ pending หาย)
+  if(pendingOrders.size===0){ordersLoaded=false;}
+  if(!ordersLoaded){
     document.getElementById('content').innerHTML=`
     <div class="page-header"><div><div class="page-title">รายการออเดอร์</div></div></div>
     <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;flex-direction:column;gap:14px">
       <div style="width:40px;height:40px;border:3px solid var(--green-mid);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
       <div style="font-size:14px;color:var(--text2)">กำลังโหลดออเดอร์จาก Google Sheets…</div>
     </div>`;
-    loadOrdersCSV().then(ok=>{
-      if(ok){toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');}
-      else{toast('โหลดไม่สำเร็จ — ใช้ข้อมูล demo','err');}
+    // ลอง GAS ก่อน (realtime) → fallback CSV
+    const loader = (GAS_URL&&GAS_URL!=='YOUR_APPS_SCRIPT_URL_HERE')
+      ? loadOrdersGAS()
+      : loadOrdersCSV();
+    loader.then(ok=>{
+      if(ok){
+        ordersLoaded=true;
+        toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');
+      } else {
+        // GAS ไม่ได้ตั้ง หรือ error → ลอง CSV
+        loadOrdersCSV().then(csvOk=>{
+          if(csvOk){ordersLoaded=true;toast('โหลดออเดอร์ '+ORDERS.length+' รายการ (CSV)','ok');}
+          else{ordersLoaded=true;toast('โหลดไม่สำเร็จ — ใช้ข้อมูล cache','err');}
+          vOrders();
+        });
+        return;
+      }
       vOrders();
     });
     return;
