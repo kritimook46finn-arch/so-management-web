@@ -726,8 +726,8 @@ function doLogout(){
 
 // ── SHELL ─────────────────────────────────────
 function renderShell(){
-  // นับจาก ORDERS ที่โหลดแล้วเท่านั้น
-  const pending=ordersLoaded?ORDERS.filter(o=>!o.soOpened).length:0;
+  // นับเหมือนหน้า vSO — no>=350 และ soOpened=false
+  const pending=ordersLoaded?ORDERS.filter(o=>o.no>=350&&!o.soOpened).length:0;
   const items=[
     {k:'orders',l:'รายการออเดอร์',i:'list'},
     {k:'new-order',l:'สร้างออเดอร์',i:'plus'},
