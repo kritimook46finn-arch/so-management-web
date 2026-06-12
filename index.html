@@ -318,22 +318,14 @@ a:hover{text-decoration:underline}
 .toast.ok{border-left:3px solid var(--green)}
 .toast.err{border-left:3px solid var(--red)}
 
-@keyframes spin{to{transform:rotate(360deg)}}
-.pending-card{background:#FFFBEB !important}
+/* ── ORDER CARD (mobile) ── */
 .desktop-only{display:block}
 .mobile-only{display:none}
-
-/* ── ORDER CARD (mobile) ── */
-.order-card{
-  background:#fff;border:1px solid var(--border);border-radius:var(--r);
-  padding:12px 14px;cursor:pointer;transition:all .12s;
-  display:flex;flex-direction:column;gap:6px;
-}
-.order-card:active{background:var(--green-soft);}
-.order-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.order-card-mid{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
-.order-card-bot{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .order-cards{display:flex;flex-direction:column;gap:8px}
+.order-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;-webkit-tap-highlight-color:transparent}
+.order-card:active{background:var(--green-soft)}
+.pending-card{background:#FFFBEB !important}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── MOBILE BOTTOM NAV ── */
 .mobile-nav{
@@ -362,8 +354,6 @@ a:hover{text-decoration:underline}
   /* ซ่อน sidebar ปกติ แสดง bottom nav แทน */
   .sidebar{display:none !important}
   .mobile-nav{display:flex}
-  .desktop-only{display:none !important}
-  .mobile-only{display:block !important}
 
   /* content เพิ่ม padding bottom ให้พ้น bottom nav */
   .content-scroll{padding:12px 12px 80px}
@@ -413,6 +403,8 @@ a:hover{text-decoration:underline}
 
   /* sync btn */
   .btn{font-size:12px;padding:7px 12px}
+  .desktop-only{display:none !important}
+  .mobile-only{display:flex !important}
 }
 </style>
 </head>
@@ -685,7 +677,7 @@ const USERS={
 };
 const LOGIN_PASS='insorder2026';
 const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
-let role=null,userEmail='',userName='',fWHStage='ทั้งหมด',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
+let role=null,userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
 let pendingOrders=new Set(); // No. ที่สร้างใหม่ยังรอ save ไป Sheet
 
 // ── DELETED NOs (localStorage) ────────────────
@@ -867,7 +859,7 @@ function _renderMobileNav(items, pending){
 }
 
 function nav(v){
-  view=v;sq='';if(v!=='new-order')prodSq='';if(v!=='so-manage'){fSOStatus='ทั้งหมด';fSOSale='ทั้งหมด';}if(v!=='warehouse')fWHStage='ทั้งหมด';
+  view=v;sq='';if(v!=='new-order')prodSq='';if(v!=='so-manage'){fSOStatus='ทั้งหมด';fSOSale='ทั้งหมด';}
   // อัปเดต active state บน mobile nav
   document.querySelectorAll('.mobile-nav-btn').forEach(b=>{
     b.classList.toggle('active', b.getAttribute('onclick')===`nav('${v}')`);
@@ -880,21 +872,7 @@ function nav(v){
 function handleSearch(q){sq=q.toLowerCase();if(['orders','so-manage','warehouse','products'].includes(view))render(false);}
 function render(sc=true){
   if(sc)document.getElementById('content').scrollTop=0;
-  const titleMap={orders:'รายการออเดอร์','new-order':'สร้างออเดอร์',products:'รายการสินค้า','so-manage':'จัดการ SO',warehouse:'สถานะคลัง'};
-  document.getElementById('topbar-title').textContent=titleMap[view]||'';
-  // mobile topbar actions สำหรับ new-order
-  const ta=document.getElementById('topbar-actions');
-  if(view==='new-order'&&draft){
-    const disabled=!draft.sale||!draft.cust||!draft.pay||Object.entries(draft.items||{}).filter(([,v])=>v.qty>0).length===0;
-    ta.innerHTML=`<div class="mobile-only" style="display:flex;gap:6px">
-      <button class="btn btn-ghost btn-sm" onclick="draft=null;prodSq='';nav('orders')">ยกเลิก</button>
-      <button class="btn btn-primary btn-sm" onclick="saveOrder()" ${disabled?'disabled':''}>
-        ${draft._editNo?'บันทึก':'สร้าง'}
-      </button>
-    </div>`;
-  } else {
-    ta.innerHTML='';
-  }
+  document.getElementById('topbar-title').textContent={orders:'รายการออเดอร์','new-order':'สร้างออเดอร์',products:'รายการสินค้า','so-manage':'จัดการ SO',warehouse:'สถานะคลัง'}[view]||'';
   ({orders:vOrders,'new-order':vNew,products:vProds,'so-manage':vSO,warehouse:vWH}[view]||vOrders)();
 }
 
@@ -993,6 +971,7 @@ async function vOrders(){
     <div style="width:1px;height:18px;background:var(--border);margin:0 2px"></div>
     ${['ทั้งหมด','ยังไม่ชำระ','ชำระแล้ว'].map(s=>`<button class="filter-chip ${fPay===s?'active':''}" onclick="fPay='${s}';render(false)">${s}</button>`).join('')}
   </div>
+  <!-- Desktop: table -->
   <div class="table-wrap desktop-only" style="overflow-x:auto">
   <table class="order-table" style="min-width:860px;table-layout:fixed;width:100%">
   <colgroup>
@@ -1001,33 +980,27 @@ async function vOrders(){
     <col style="width:88px"><col style="width:120px"><col style="width:82px"><col style="width:36px">
   </colgroup>
   <thead><tr>
-    <th>No.</th>
-    <th class="col-hide-mobile">วันที่</th>
-    <th>Sale</th>
-    <th>ลูกค้า</th>
-    <th class="col-hide-mobile">Pipeline</th>
-    <th class="col-hide-mobile">ชำระ</th>
-    <th class="col-hide-mobile">SO</th>
-    <th style="text-align:right">ยอด</th>
-    <th></th>
+    <th>No.</th><th>วันที่</th><th>Sale</th><th>ลูกค้า</th>
+    <th>Pipeline</th><th>ชำระ</th><th>SO</th>
+    <th style="text-align:right">ยอด</th><th></th>
   </tr></thead>
-  <tbody>${list.length===0?`<tr><td colspan="9"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`:
-  list.map(o=>`<tr onclick="showOrder(${o.no})" style="${pendingOrders.has(o.no)?'background:#FFFBEB;':''}">
-    <td><span class="order-no">${o.no}</span></td>
-    <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
-    <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
-    <td>
-      <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px" title="${o.cust.replace(/^[A-Z]\d+ /,'')}">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
-      <div style="font-size:10px;color:var(--text3)">${o.cust.match(/^[A-Z]\d+/)?.[0]||''}</div>
-    </td>
-    <td style="white-space:nowrap;padding-right:6px">${pipe(o)}</td>
-    <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
-    <td><span style="font-family:var(--mono);font-size:11px;color:${o.soOpened?'var(--green)':'var(--text3)'};overflow:hidden;text-overflow:ellipsis;display:block;white-space:nowrap">${o.soNo||'—'}</span></td>
-    <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
-    <td><button class="btn btn-danger btn-sm" style="padding:4px 7px;min-width:28px" title="ลบออเดอร์" onclick="event.stopPropagation();confirmDeleteOrder(${o.no})">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-    </button></td>
-  </tr>`).join('')}</tbody></table></div>`;
+  <tbody>${list.length===0
+    ?`<tr><td colspan="9"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`
+    :list.map(o=>`<tr onclick="showOrder(${o.no})" style="${pendingOrders.has(o.no)?'background:#FFFBEB;':''}">
+      <td><span class="order-no">${o.no}</span></td>
+      <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
+      <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
+      <td><div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px">${o.cust.replace(/^[A-Z]\d+ /,'')}</div><div style="font-size:10px;color:var(--text3)">${o.cust.match(/^[A-Z]\d+/)?.[0]||''}</div></td>
+      <td style="white-space:nowrap">${pipe(o)}</td>
+      <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
+      <td><span style="font-family:var(--mono);font-size:11px;color:${o.soOpened?'var(--green)':'var(--text3)'}">${o.soNo||'—'}</span></td>
+      <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
+      <td><button class="btn btn-danger btn-sm" style="padding:4px 7px" onclick="event.stopPropagation();confirmDeleteOrder(${o.no})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></td>
+    </tr>`).join('')}</tbody></table></div>
+
+  <!-- Mobile: card layout -->
+  <div class="order-cards mobile-only" id="order-cards-mobile"></div>`;
+  _renderOrderCards(list);
 }
 
 // ── ORDER DETAIL MODAL ────────────────────────
@@ -1252,8 +1225,6 @@ function vNew(){
   document.getElementById('content').innerHTML=`
   <div class="page-header">
     <div><div class="page-title">${draft._editNo?'แก้ไขออเดอร์ No.'+draft._editNo:'สร้างออเดอร์ใหม่'}</div><div class="page-sub">${draft._editNo?'แก้ไขข้อมูลออเดอร์เดิม':'กรอกข้อมูล เลือกสินค้า แล้วกดบันทึก'}</div></div>
-    <!-- Desktop only buttons in header -->
-    <div class="desktop-only" style="display:flex;gap:8px">
   </div>
   <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start">
     <div>
@@ -1731,64 +1702,25 @@ function vWH(){
     const stage=o.wStage==='เปิดบิลแล้ว'?'เปิดบิล':o.wStage==='เตรียมของแล้ว'?'เตรียมของ':o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล';
     grp[stage].push(o);
   });
-  // apply stage filter
-  const stageMap={'เปิดบิล':'เปิดบิลแล้ว','เตรียมของ':'เตรียมของแล้ว','จัดส่ง':'จัดส่งแล้ว'};
-  let displayList=[...list];
-  if(fWHStage!=='ทั้งหมด'){
-    const target=stageMap[fWHStage]||fWHStage;
-    displayList=list.filter(o=>{
-      const stage=o.wStage==='เปิดบิลแล้ว'?'เปิดบิล':o.wStage==='เตรียมของแล้ว'?'เตรียมของ':o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล';
-      return stage===fWHStage;
-    });
-  }
-  // rebuild grp ตาม displayList
-  const grp2={};cols.forEach(([s])=>grp2[s]=[]);
-  displayList.forEach(o=>{
-    const stage=o.wStage==='เปิดบิลแล้ว'?'เปิดบิล':o.wStage==='เตรียมของแล้ว'?'เตรียมของ':o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล';
-    grp2[stage].push(o);
-  });
-
   document.getElementById('content').innerHTML=`
-  <div class="page-header" style="flex-direction:column;align-items:stretch;gap:10px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div><div class="page-title">สถานะคลัง</div><div class="page-sub">มีเลขเอกสารเปิดบิล (คลัง) แล้ว ${list.filter(o=>o.billDocNo).length} รายการ</div></div>
-    </div>
-    <!-- Filter tabs -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      ${['ทั้งหมด','เปิดบิล','เตรียมของ','จัดส่ง'].map(s=>{
-        const colors={'เปิดบิล':'var(--blue)','เตรียมของ':'var(--amber)','จัดส่ง':'var(--green)'};
-        const col=colors[s]||'var(--green)';
-        const cnt=s==='ทั้งหมด'?list.length:(grp2[s]||[]).length;
-        const active=fWHStage===s;
-        return `<button onclick="fWHStage='${s}';render(false)" style="
-          padding:7px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;
-          border:2px solid ${active?(s==='ทั้งหมด'?'var(--green)':col):'var(--border2)'};
-          background:${active?(s==='ทั้งหมด'?'var(--green)':col):'#fff'};
-          color:${active?'#fff':(s==='ทั้งหมด'?'var(--text2)':col)};
-          transition:all .15s">
-          ${s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':s==='จัดส่ง'?'🚚':''}${s}
-          <span style="opacity:.8;font-size:11px">(${cnt})</span>
-        </button>`;
-      }).join('')}
-    </div>
+  <div class="page-header">
+    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">มีเลขเอกสารเปิดบิล (คลัง) แล้ว ${list.filter(o=>o.billDocNo).length} รายการ</div></div>
   </div>
-
-  <!-- Desktop: kanban 3 col -->
-  <div class="kanban desktop-only">
+  <div class="kanban">
   ${cols.map(([s,col])=>`
   <div class="kanban-col">
     <div class="kanban-head" style="border-top:3px solid ${col}">
       <span style="color:${col}">${s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚'} ${s}</span>
-      <span class="kanban-head-badge" style="color:${col}">${(grp2[s]||[]).length}</span>
+      <span class="kanban-head-badge" style="color:${col}">${grp[s].length}</span>
     </div>
     <div class="kanban-body">
-    ${(grp2[s]||[]).length===0
+    ${grp[s].length===0
       ?`<div style="font-size:12px;color:var(--text3);padding:16px 4px;text-align:center">ไม่มีออเดอร์</div>`
-      :(grp2[s]||[]).map(o=>`
+      :grp[s].map(o=>`
       <div class="kanban-card" onclick="showOrder(${o.no})">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
           <span class="kanban-card-no">${o.no}</span>
-          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${o.date.split(' ')[0]||o.date}</span>
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${o.date}</span>
         </div>
         <div class="kanban-card-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
         ${o.billDocNo?`<div class="kanban-card-bill">${o.billDocNo}</div>`:''}
@@ -1806,54 +1738,39 @@ function vWH(){
       </div>`).join('')}
     </div>
   </div>`).join('')}
-  </div>
-
-  <!-- Mobile: single column cards -->
-  <div class="mobile-only" id="wh-mobile-cards"></div>`;
-  // inject mobile cards via JS (หลีกเลี่ยง nested template literal)
-  _renderWHMobileCards(grp2, cols, fWHStage);
-
+  </div>`;
 }
 
-function _renderWHMobileCards(grp2, cols, fWHStage){
-  const el=document.getElementById('wh-mobile-cards');
+
+function _renderOrderCards(list){
+  const el=document.getElementById('order-cards-mobile');
   if(!el)return;
-  const colColors={'เปิดบิล':'var(--blue)','เตรียมของ':'var(--amber)','จัดส่ง':'var(--green)'};
-  const colEmoji={'เปิดบิล':'📋','เตรียมของ':'📦','จัดส่ง':'🚚'};
-  const stageKeys=fWHStage==='ทั้งหมด'?cols.map(([s])=>s):[fWHStage];
-  let html='';
-  stageKeys.forEach(function(s){
-    const orders=grp2[s]||[];
-    if(!orders.length)return;
-    const col=colColors[s]||'var(--green)';
-    const em=colEmoji[s]||'';
-    html+='<div style="font-size:11px;font-weight:700;color:'+col+';text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">'+em+' '+s+' ('+orders.length+')</div>';
-    orders.forEach(function(o){
-      const cusName=o.cust.replace(/^[A-Z]\d+ /,'');
-      const dateStr=(o.date||'').split(' ')[0]||o.date||'';
-      const shipStr=o.shipDate?'ส่ง '+((o.shipDate||'').split(' ')[0]||o.shipDate):'';
-      const bill=o.billDocNo?'<div style="font-family:monospace;font-size:12px;color:var(--blue);font-weight:700;margin-bottom:6px">'+o.billDocNo+'</div>':'';
-      const stages=['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'];
-      const stageLabels={'เปิดบิลแล้ว':'บิล','เตรียมของแล้ว':'เตรียม','จัดส่งแล้ว':'จัดส่ง'};
-      const stageCls={'เปิดบิลแล้ว':'ks-open','เตรียมของแล้ว':'ks-prep','จัดส่งแล้ว':'ks-ship'};
-      let btns='';
-      stages.forEach(function(st){
-        const act=o.wStage===st;
-        const cls=act?(stageCls[st]||''):'';
-        btns+='<button class="ks-btn '+cls+'" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();setWS('+o.no+',\''+st+'\');render(false)">'+stageLabels[st]+'</button>';
-      });
-      html+='<div style="background:#fff;border:1.5px solid '+(o.billDocNo?col:'var(--border)')+';border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="showOrder('+o.no+')">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:monospace;font-size:14px;font-weight:800;color:var(--green)">'+o.no+'</span><span style="font-size:10px;color:var(--text3)">'+dateStr+'</span></div>'
-        +'<div style="font-weight:700;font-size:14px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cusName+'</div>'
-        +bill
-        +'<div style="display:flex;justify-content:space-between;align-items:center">'
-        +'<div style="display:flex;gap:4px">'+btns+'</div>'
-        +'<span style="font-size:11px;color:var(--text3)">'+shipStr+'</span>'
-        +'</div></div>';
-    });
-  });
-  el.innerHTML=html;
+  if(!list.length){el.innerHTML='<div class="empty-state"><div class="et">ไม่พบออเดอร์</div></div>';return;}
+  el.innerHTML=list.map(o=>{
+    const nm=o.cust.replace(/^[A-Z]\d+ /,'');
+    const cd=o.cust.match(/^[A-Z]\d+/)?.[0]||'';
+    const dt=(o.date||'').replace(/ \d{2}:\d{2}:\d{2}.*$/,'').trim();
+    const pend=pendingOrders.has(o.no);
+    const delBtn='<button class="btn btn-danger btn-sm" style="padding:5px 8px;flex-shrink:0" onclick="event.stopPropagation();confirmDeleteOrder('+o.no+')">'
+      +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
+    return '<div class="order-card'+(pend?' pending-card':'')+'" onclick="showOrder('+o.no+')">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+        +'<div style="display:flex;align-items:center;gap:7px">'
+          +'<span style="font-family:monospace;font-size:16px;font-weight:800;color:var(--green)">'+o.no+'</span>'
+          +'<span class="sale-badge sale-'+(o.sale||'').toLowerCase()+'">'+o.sale+'</span>'
+          +'<span class="badge '+(o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid')+'">'+o.payStatus+'</span>'
+        +'</div>'+delBtn
+      +'</div>'
+      +'<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nm+'</div>'
+      +(cd||dt?'<div style="font-size:11px;color:var(--text3)">'+(cd||'')+(cd&&dt?' · ':'')+dt+'</div>':'')
+      +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +(o.soOpened&&o.soNo?'<span style="font-family:monospace;font-size:11px;color:var(--green);font-weight:700">'+o.soNo+'</span>':'<span></span>')
+        +'<span style="font-weight:800;font-size:16px;color:var(--green)">฿'+fmt(tot(o))+'</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
 }
+
 // ── SYNC ──────────────────────────────────────
 async function sync(action,data){
   if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
