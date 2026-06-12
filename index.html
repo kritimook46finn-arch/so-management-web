@@ -693,7 +693,7 @@ const USERS={
 };
 const LOGIN_PASS='insorder2026';
 const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
-let role=null,userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
+let role=null,fWHStage='ทั้งหมด',userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
 let pendingOrders=new Set(); // No. ที่สร้างใหม่ยังรอ save ไป Sheet
 
 // ── DELETED NOs (localStorage) ────────────────
@@ -1724,18 +1724,54 @@ function vSO(){
 function vWH(){
   let list=ORDERS.filter(o=>o.soOpened&&o.no>=350);
   if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
-  const cols=[['เปิดบิล','var(--blue)'],['เตรียมของ','var(--amber)'],['จัดส่ง','var(--green)']];  // 3 stages
+  const cols=[['เปิดบิล','var(--blue)'],['เตรียมของ','var(--amber)'],['จัดส่ง','var(--green)']];
+  const stageMap={'เปิดบิล':'เปิดบิลแล้ว','เตรียมของ':'เตรียมของแล้ว','จัดส่ง':'จัดส่งแล้ว'};
   const grp={};cols.forEach(([s])=>grp[s]=[]);
   list.forEach(o=>{
     const stage=o.wStage==='เปิดบิลแล้ว'?'เปิดบิล':o.wStage==='เตรียมของแล้ว'?'เตรียมของ':o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล';
     grp[stage].push(o);
   });
+
+  // filter ตาม fWHStage
+  const activeCols = fWHStage==='ทั้งหมด' ? cols : cols.filter(([s])=>s===fWHStage);
+
+  // filter bar HTML
+  const filterBar=cols.map(([s,col])=>{
+    const cnt=grp[s].length;
+    const active=fWHStage===s;
+    const em=s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚';
+    return `<button onclick="fWHStage='${s}';render(false)" style="
+      padding:8px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
+      border:2px solid ${active?col:'var(--border2)'};
+      background:${active?col:'#fff'};
+      color:${active?'#fff':col};
+      transition:all .15s">${em} ${s} <span style="opacity:.75">(${cnt})</span></button>`;
+  }).join('');
+  const allActive=fWHStage==='ทั้งหมด';
+
   document.getElementById('content').innerHTML=`
-  <div class="page-header">
-    <div><div class="page-title">สถานะคลัง</div><div class="page-sub">มีเลขเอกสารเปิดบิล (คลัง) แล้ว ${list.filter(o=>o.billDocNo).length} รายการ</div></div>
+  <div class="page-header" style="flex-direction:column;align-items:stretch;gap:10px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="page-title">สถานะคลัง</div>
+        <div class="page-sub">มีเลขเอกสารเปิดบิล (คลัง) แล้ว ${list.filter(o=>o.billDocNo).length} รายการ</div>
+      </div>
+    </div>
+    <!-- Filter bar -->
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch">
+      <button onclick="fWHStage='ทั้งหมด';render(false)" style="
+        padding:8px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
+        border:2px solid ${allActive?'var(--green)':'var(--border2)'};
+        background:${allActive?'var(--green)':'#fff'};
+        color:${allActive?'#fff':'var(--text2)'};
+        transition:all .15s">ทั้งหมด (${list.length})</button>
+      ${filterBar}
+    </div>
   </div>
-  <div class="kanban">
-  ${cols.map(([s,col])=>`
+
+  <!-- Desktop: kanban 3 col -->
+  <div class="kanban desktop-only">
+  ${activeCols.map(([s,col])=>`
   <div class="kanban-col">
     <div class="kanban-head" style="border-top:3px solid ${col}">
       <span style="color:${col}">${s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚'} ${s}</span>
@@ -1748,12 +1784,12 @@ function vWH(){
       <div class="kanban-card" onclick="showOrder(${o.no})">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
           <span class="kanban-card-no">${o.no}</span>
-          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${o.date}</span>
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${(o.date||'').replace(/ \d{2}:\d{2}:\d{2}.*$/,'')}</span>
         </div>
         <div class="kanban-card-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
         ${o.billDocNo?`<div class="kanban-card-bill">${o.billDocNo}</div>`:''}
         <div class="kanban-card-meta">
-          <span class="kanban-card-date">${o.shipDate?'ส่ง '+o.shipDate:''}</span>
+          <span class="kanban-card-date">${o.shipDate?'ส่ง '+(o.shipDate||'').replace(/ \d{2}:\d{2}:\d{2}.*$/,''):''}</span>
           <div class="kanban-card-btns">
             ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(st=>{
               const act=o.wStage===st;
@@ -1766,7 +1802,54 @@ function vWH(){
       </div>`).join('')}
     </div>
   </div>`).join('')}
-  </div>`;
+  </div>
+
+  <!-- Mobile: vertical cards -->
+  <div class="mobile-only" id="wh-mobile-list" style="flex-direction:column;gap:8px"></div>`;
+
+  _renderWHCards(grp, activeCols);
+}
+
+function _renderWHCards(grp, activeCols){
+  const el=document.getElementById('wh-mobile-list');
+  if(!el)return;
+  const colColors={'เปิดบิล':'var(--blue)','เตรียมของ':'var(--amber)','จัดส่ง':'var(--green)'};
+  const stageFullName={'เปิดบิล':'เปิดบิลแล้ว','เตรียมของ':'เตรียมของแล้ว','จัดส่ง':'จัดส่งแล้ว'};
+  let html='';
+  activeCols.forEach(function([s,col]){
+    const orders=grp[s]||[];
+    if(!orders.length)return;
+    const em=s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚';
+    html+='<div style="font-size:11px;font-weight:700;color:'+col+';text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">'+em+' '+s+' ('+orders.length+')</div>';
+    orders.forEach(function(o){
+      const nm=o.cust.replace(/^[A-Z]\d+ /,'');
+      const dt=(o.date||'').replace(/ \d{2}:\d{2}:\d{2}.*$/,'').trim();
+      const sd=(o.shipDate||'').replace(/ \d{2}:\d{2}:\d{2}.*$/,'').trim();
+      const bill=o.billDocNo?'<div style="font-family:monospace;font-size:12px;color:var(--blue);font-weight:700;margin:3px 0">'+o.billDocNo+'</div>':'';
+      // stage buttons
+      const stages=['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'];
+      const stageLbl={'เปิดบิลแล้ว':'บิล','เตรียมของแล้ว':'เตรียม','จัดส่งแล้ว':'จัดส่ง'};
+      const stageCls={'เปิดบิลแล้ว':'ks-open','เตรียมของแล้ว':'ks-prep','จัดส่งแล้ว':'ks-ship'};
+      let btns='';
+      stages.forEach(function(st){
+        const act=o.wStage===st;
+        btns+='<button class="ks-btn '+(act?stageCls[st]:'')+'" style="padding:5px 12px;font-size:12px" onclick="event.stopPropagation();setWS('+o.no+',\''+st+'\');render(false)">'+stageLbl[st]+'</button>';
+      });
+      html+='<div style="background:#fff;border:1.5px solid '+(o.wStage===stageFullName[s]?col:'var(--border)')+';border-radius:10px;padding:12px 14px;cursor:pointer;width:100%;box-sizing:border-box" onclick="showOrder('+o.no+')">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          +'<span style="font-family:monospace;font-size:15px;font-weight:800;color:var(--green)">'+o.no+'</span>'
+          +'<span style="font-size:11px;color:var(--text3)">'+dt+'</span>'
+        +'</div>'
+        +'<div style="font-weight:700;font-size:14px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nm+'</div>'
+        +bill
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'
+          +'<div style="display:flex;gap:4px">'+btns+'</div>'
+          +(sd?'<span style="font-size:11px;color:var(--text3)">ส่ง '+sd+'</span>':'')
+        +'</div>'
+        +'</div>';
+    });
+  });
+  el.innerHTML=html||'<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">ไม่มีออเดอร์ในหมวดนี้</div>';
 }
 
 
