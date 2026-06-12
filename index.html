@@ -502,7 +502,7 @@ async function loadOrdersCSV(){
     const parsed=parseReceiptsCSV(text);
     if(parsed.length===0)throw new Error('0 rows');
     ORDERS=filterDeleted(parsed);  // กรอง No. ที่ถูกลบออก
-    runNo=Math.max(...ORDERS.map(o=>o.no),490)+1;
+    // ไม่ต้องตั้ง runNo แล้ว — ใช้ nextOrderNo() แทน
     ordersLoaded=true;
     return true;
   }catch(e){
@@ -598,7 +598,7 @@ let ORDERS=[
    shipper:'Lalamove',shipTo:'99/9 ถนน พุทธมณฑลสาย 4 กรุงเทพ',shipDate:'09/06/2026',note:'',
    soOpened:true,soNo:'SOIN26060021',wStage:'จัดส่งแล้ว',soNote:'',whNote:'',billDocNo:''},
 ];
-let runNo=491;
+// runNo ถูกคำนวณแบบ dynamic จาก ORDERS — ดู nextOrderNo()
 
 // users: email → display name
 const USERS={
@@ -642,6 +642,12 @@ function filterDeleted(orders){
 }
 
 // ── HELPERS ───────────────────────────────────
+// คำนวณ No. ถัดไปจาก ORDERS ปัจจุบัน (ไม่ใช้ static counter)
+// ป้องกัน gap เมื่อลบออเดอร์ที่เพิ่งสร้าง
+function nextOrderNo(){
+  if(ORDERS.length===0)return 494;
+  return Math.max(...ORDERS.map(o=>+o.no||0),493)+1;
+}
 const fmt=n=>(+n||0).toLocaleString('th-TH');
 const tot=o=>o.items.reduce((s,i)=>s+(i.price||0)*(i.qty||0),0);
 const plabel=o=>o.wStage==='จัดส่งแล้ว'?'done':o.wStage?'wh':o.soOpened?'so':'sale';
@@ -1283,7 +1289,7 @@ function saveOrder(){
     }
   } else {
     // ── NEW ออเดอร์ใหม่ ──
-    const no=runNo++;
+    const no=nextOrderNo();
     const now=new Date();
     const d=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()}`;
     const o={...draft,no,date:d,items,soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''};
@@ -1359,8 +1365,9 @@ function confirmDeleteOrder(no){
 function deleteOrder(no){
   // 1. เก็บ No. ที่ลบใน localStorage ทันที (ก่อน sync)
   addDeletedNo(no);
-  // 2. ลบออกจาก ORDERS ใน memory
+  // 2. ลบออกจาก ORDERS และ pendingOrders ใน memory
   ORDERS=ORDERS.filter(o=>o.no!==no);
+  pendingOrders.delete(no);  // ถ้า pending → ยกเลิกด้วย ไม่ต้อง save
   closeModal('m-order');
   render(false);
   toast(`ลบออเดอร์ No.${no} แล้ว`,'ok');
