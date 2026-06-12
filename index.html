@@ -909,11 +909,19 @@ function showOrder(no){
       <svg viewBox="0 0 24 24" fill="none" stroke="${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
       <span style="font-size:12px;font-weight:700;color:${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'};text-transform:uppercase;letter-spacing:.4px">สถานะคลัง${o.wStage?' — '+o.wStage:''}</span>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px" id="ws-btns-${o.no}">
       ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(s=>{
         const active=o.wStage===s;
         const col=s==='จัดส่งแล้ว'?'var(--green)':s==='เตรียมของแล้ว'?'var(--amber)':'var(--blue)';
-        return '<button onclick="setWS('+o.no+',\''+s+'\')" style="padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid '+(active?col:'var(--border2)')+';background:'+(active?col:'#fff')+';color:'+(active?'#fff':'var(--text3)')+'">'+s+'</button>';
+        return `<button
+          data-no="${o.no}"
+          data-stage="${s}"
+          onclick="setWSBtn(this)"
+          style="padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;
+            border:2px solid ${active?col:'var(--border2)'};
+            background:${active?col:'#fff'};
+            color:${active?'#fff':'var(--text3)'}"
+        >${s}</button>`;
       }).join('')}
     </div>
     <div class="form-group" style="margin-bottom:8px">
@@ -965,18 +973,41 @@ function saveSONo(no){
   toast('✓ บันทึกเลข SO: '+o.soNo,'ok');
   sync('UPDATE_ORDER',o);renderShell();
 }
+function setWSBtn(btn){
+  // อ่านจาก data attribute — ป้องกันปัญหา encoding ภาษาไทยใน HTML attribute
+  const no=+btn.dataset.no;
+  const s=btn.dataset.stage;
+  setWS(no,s);
+}
 function setWS(no,s){
   const o=ORDERS.find(x=>x.no===no);if(!o)return;
-  // กดซ้ำที่สถานะเดิม = ยกเลิก (toggle off)
-  if(o.wStage===s){
-    o.wStage='';
-    showOrder(no);
-    toast('↩ ยกเลิกสถานะ: '+s,'ok');
+  const wasActive=o.wStage===s;
+  // toggle: กดซ้ำ = ยกเลิก
+  o.wStage=wasActive?'':s;
+  // อัปเดต button styles ทันทีโดยไม่ re-render modal ทั้งหมด
+  const container=document.getElementById('ws-btns-'+no);
+  if(container){
+    const cols={'เปิดบิลแล้ว':'var(--blue)','เตรียมของแล้ว':'var(--amber)','จัดส่งแล้ว':'var(--green)'};
+    container.querySelectorAll('button[data-stage]').forEach(btn=>{
+      const st=btn.dataset.stage;
+      const isActive=o.wStage===st;
+      const col=cols[st]||'var(--blue)';
+      btn.style.border='2px solid '+(isActive?col:'var(--border2)');
+      btn.style.background=isActive?col:'#fff';
+      btn.style.color=isActive?'#fff':'var(--text3)';
+    });
+    // อัปเดต header label
+    const header=container.closest('.action-block')?.querySelector('span[style*="uppercase"]');
+    if(header){
+      const col=o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)';
+      header.style.color=col;
+      header.textContent='สถานะคลัง'+(o.wStage?' — '+o.wStage:'');
+    }
   } else {
-    o.wStage=s;
-    showOrder(no);
-    toast('📦 อัปเดต: '+s,'ok');
+    // fallback: re-render ถ้าไม่พบ container (เช่น เรียกจาก kanban)
+    if(view==='warehouse')render(false);
   }
+  toast(wasActive?'↩ ยกเลิกสถานะ: '+s:'📦 อัปเดต: '+s,'ok');
   sync('UPDATE_ORDER',o);
 }
 function saveSONote(no,val){
