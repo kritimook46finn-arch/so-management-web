@@ -828,36 +828,53 @@ function vDash(){
   <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="nav('orders')">ดูทั้งหมด ${ORDERS.length} รายการ →</button></div>`;
 }
 
+// flag ป้องกัน loadOrders วนซ้ำ
+let loadingOrders=false;
+
 function vOrders(){
-  // โหลดข้อมูลใหม่จาก Sheet ทุกครั้ง (realtime)
-  // ยกเว้นถ้ามี pending orders ที่ยังไม่ได้ save (ไม่ reload เพื่อไม่ทำ pending หาย)
-  if(pendingOrders.size===0){ordersLoaded=false;}
+  // ถ้ากำลังโหลดอยู่แล้ว ไม่ต้องโหลดซ้ำ
+  if(loadingOrders)return;
+
+  // reload จาก Sheet ทุกครั้งที่เข้าหน้า orders
+  // ยกเว้นมี pending รอ save อยู่ (เพื่อไม่ทำ pending หาย)
+  const needReload = pendingOrders.size===0;
+  if(needReload)ordersLoaded=false;
+
   if(!ordersLoaded){
+    loadingOrders=true;
     document.getElementById('content').innerHTML=`
     <div class="page-header"><div><div class="page-title">รายการออเดอร์</div></div></div>
     <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;flex-direction:column;gap:14px">
       <div style="width:40px;height:40px;border:3px solid var(--green-mid);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
       <div style="font-size:14px;color:var(--text2)">กำลังโหลดออเดอร์จาก Google Sheets…</div>
     </div>`;
-    // ลอง GAS ก่อน (realtime) → fallback CSV
-    const loader = (GAS_URL&&GAS_URL!=='YOUR_APPS_SCRIPT_URL_HERE')
-      ? loadOrdersGAS()
-      : loadOrdersCSV();
-    loader.then(ok=>{
-      if(ok){
-        ordersLoaded=true;
-        toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');
-      } else {
-        // GAS ไม่ได้ตั้ง หรือ error → ลอง CSV
-        loadOrdersCSV().then(csvOk=>{
-          if(csvOk){ordersLoaded=true;toast('โหลดออเดอร์ '+ORDERS.length+' รายการ (CSV)','ok');}
-          else{ordersLoaded=true;toast('โหลดไม่สำเร็จ — ใช้ข้อมูล cache','err');}
+
+    const useGAS = GAS_URL && GAS_URL!=='YOUR_APPS_SCRIPT_URL_HERE';
+
+    (useGAS ? loadOrdersGAS() : Promise.resolve(false))
+      .then(gasOk=>{
+        if(gasOk){
+          ordersLoaded=true;
+          loadingOrders=false;
+          toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');
           vOrders();
-        });
-        return;
-      }
-      vOrders();
-    });
+        } else {
+          // GAS ไม่ได้ตั้งหรือ error → fallback CSV
+          return loadOrdersCSV().then(csvOk=>{
+            ordersLoaded=true;
+            loadingOrders=false;
+            if(csvOk)toast('โหลดออเดอร์ '+ORDERS.length+' รายการ (CSV)','ok');
+            else toast('โหลดไม่สำเร็จ','err');
+            vOrders();
+          });
+        }
+      })
+      .catch(e=>{
+        ordersLoaded=true;
+        loadingOrders=false;
+        console.warn('load error:',e);
+        vOrders();
+      });
     return;
   }
   let list=[...ORDERS];
