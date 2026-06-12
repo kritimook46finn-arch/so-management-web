@@ -412,7 +412,7 @@ a:hover{text-decoration:underline}
 </div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbwpDibAGed4-A8msnzgigQgoB1E6tQEgFo5EWr_nSCCEeyEEkRzW6vZGL88ULaW_VYF/exec';
+const GAS_URL='YOUR_APPS_SCRIPT_URL_HERE';
 
 // ── RECEIPTS CSV URL ──────────────────────────
 const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXcauzirmrhkUV86lN3C_uZZI33zhPJ-4f0ufqZOBPoOK_pwSjtmibCDd0ucZWohKAHiy4KMvOhu1b/pub?gid=1734187699&single=true&output=csv';
@@ -501,7 +501,7 @@ async function loadOrdersCSV(){
     if(text.trim().startsWith('<!'))throw new Error('Not published');
     const parsed=parseReceiptsCSV(text);
     if(parsed.length===0)throw new Error('0 rows');
-    ORDERS=parsed;
+    ORDERS=filterDeleted(parsed);  // กรอง No. ที่ถูกลบออก
     runNo=Math.max(...ORDERS.map(o=>o.no),490)+1;
     ordersLoaded=true;
     return true;
@@ -609,6 +609,36 @@ const USERS={
 const LOGIN_PASS='insorder2026';
 const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
 let role=null,userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
+
+// ── DELETED NOs (localStorage) ────────────────
+// เก็บ No. ที่ผู้ใช้ลบไว้ใน localStorage
+// ใช้กรองออกทุกครั้งที่โหลด CSV ใหม่
+// ป้องกันกรณี Google Sheets CSV cache ยังไม่ update
+function getDeletedNos(){
+  try{
+    const raw=localStorage.getItem('ins_deleted_nos');
+    return raw?JSON.parse(raw):[];
+  }catch(e){return[];}
+}
+function addDeletedNo(no){
+  try{
+    const list=getDeletedNos();
+    if(!list.includes(+no)){list.push(+no);}
+    localStorage.setItem('ins_deleted_nos',JSON.stringify(list));
+  }catch(e){}
+}
+function removeDeletedNo(no){
+  // ถ้า GAS ยืนยันว่าลบสำเร็จในชีตแล้ว ไม่ต้อง track ต่อ
+  try{
+    const list=getDeletedNos().filter(n=>n!==+no);
+    localStorage.setItem('ins_deleted_nos',JSON.stringify(list));
+  }catch(e){}
+}
+function filterDeleted(orders){
+  const del=getDeletedNos();
+  if(del.length===0)return orders;
+  return orders.filter(o=>!del.includes(+o.no));
+}
 
 // ── HELPERS ───────────────────────────────────
 const fmt=n=>(+n||0).toLocaleString('th-TH');
@@ -1273,11 +1303,38 @@ function confirmDeleteOrder(no){
   openModal('m-delete');
 }
 function deleteOrder(no){
+  // 1. เก็บ No. ที่ลบใน localStorage ทันที (ก่อน sync)
+  addDeletedNo(no);
+  // 2. ลบออกจาก ORDERS ใน memory
   ORDERS=ORDERS.filter(o=>o.no!==no);
   closeModal('m-order');
   render(false);
   toast(`ลบออเดอร์ No.${no} แล้ว`,'ok');
-  sync('DELETE_ORDER',{no});
+  // 3. sync ไปยัง GAS — ถ้าสำเร็จ removeDeletedNo (ชีตลบแล้ว ไม่ต้อง track อีก)
+  syncDelete(no);
+}
+async function syncDelete(no){
+  if(!GAS_URL||GAS_URL==='YOUR_APPS_SCRIPT_URL_HERE')return;
+  try{
+    const res=await fetch(GAS_URL,{
+      method:'POST',
+      redirect:'follow',
+      body:JSON.stringify({action:'DELETE_ORDER',data:{no}}),
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+    });
+    const json=await res.json().catch(()=>({}));
+    if(json.ok){
+      // ลบสำเร็จในชีตแล้ว → ลบออกจาก localStorage tracking
+      removeDeletedNo(no);
+      console.log('[delete] Sheet row deleted, No.'+no);
+    } else {
+      console.warn('[delete] GAS error:',json.error);
+      // ยังเก็บใน deletedNos ไว้ก่อน เพื่อกรองตอน refresh
+    }
+  }catch(e){
+    console.warn('[delete] fetch error:',e.message);
+    // ยังเก็บใน deletedNos ไว้ก่อน
+  }
 }
 
 // ── PRODUCTS ─────────────────────────────────
