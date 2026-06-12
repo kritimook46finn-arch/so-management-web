@@ -582,44 +582,7 @@ let PRODUCTS=[
   {id:'400600101',name:'Matcha green tea 1kg',price:2500,unit:'unit'},
 ];
 
-let ORDERS=[
-  {no:490,date:'11/06/2026',sale:'Golf',cust:'L030043 บจก. แพลนเต้ ไลฟ์',
-   items:[{id:'100201100',name:'Sunflower seed protein',qty:25,price:160},{id:'100201000',name:'Pumpkin seed protein',qty:60,price:290}],
-   pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
-   shipper:'Lalamove',shipTo:'แจ้งป้อมยาม บริษัท ไบโอแกรนด์ จำกัด เลขที่ 6 หมู่ที่ 2 ตำบล หน้าไม้ อำเภอลาดหลุมแก้ว ปทุมธานี 12140',
-   shipDate:'12/06/2026',note:'ทำใบส่งของ 2 ฉบับ พร้อมลายเซ็นต์คนขับรถ + COA ให้โรงงาน',
-   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''},
-  {no:489,date:'10/06/2026',sale:'Golf',cust:'L030022 บจก. ไอ เฮิร์บ คอร์ปอเรชั่น',
-   items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:100,price:160}],
-   pay:'Cash',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample',
-   shipper:'Lalamove',shipTo:'เลขที่ 896 898 ซอย รามคำแหง 64',shipDate:'15/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060027',wStage:'จัดส่งแล้ว',soNote:'',whNote:'',billDocNo:''},
-  {no:488,date:'09/06/2026',sale:'Pea',cust:'L030079 บจก. นอร์เบิร์ต อินโนเวชั่น',
-   items:[{id:'100201000',name:'Pumpkin seed protein',qty:20,price:550}],
-   pay:'Cash',payStatus:'ยังไม่ชำระ',po:'',
-   shipper:'Lalamove',shipTo:'8/17 หมู่ที่ 8 ต.คลองสอง อ.คลองหลวง ปทุมธานี',shipDate:'12/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060025',wStage:'เตรียมของแล้ว',soNote:'',whNote:'',billDocNo:''},
-  {no:487,date:'09/06/2026',sale:'Oil',cust:'L030093 บจก.บียอนด์ แล็บโบราโทรี่',
-   items:[{id:'400200301',name:'Brown Rice Protein 1kg',qty:1,price:590}],
-   pay:'Cash',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample2',
-   shipper:'Flash',shipTo:'555/121 บี อเวนิว วัชรพล ถ.สุขาภิบาล ๕ กรุงเทพ 10220',shipDate:'15/06/2026',note:'ขอใบแจ้งหนี้',
-   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''},
-  {no:486,date:'09/06/2026',sale:'Golf',cust:'L030015 บริษัท ฟอร์แคร์ อินโน จำกัด',
-   items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160}],
-   pay:'Credit',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample3',
-   shipper:'ย้ายไปคลัง 4care',shipTo:'คลัง 4care',shipDate:'10/06/2026',note:'ทะยอยเรียกเข้า อย่างละ 500 kg.',
-   soOpened:true,soNo:'SOIN26060023',wStage:'เปิดบิลแล้ว',soNote:'',whNote:'',billDocNo:''},
-  {no:485,date:'09/06/2026',sale:'Golf',cust:'บริษัท อินน็อกเซ่ลลา จำกัด',
-   items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160},{id:'100203000',name:'Rice protein powder 600 mesh',qty:1000,price:250}],
-   pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
-   shipper:'Lalamove',shipTo:'CM Factory 91-819-3877 คุณฝน',shipDate:'11/06/2026',note:'',
-   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''},
-  {no:484,date:'08/06/2026',sale:'Golf',cust:'L030016 บริษัท ชาร์แมซ คอสเมด จำกัด',
-   items:[{id:'100200500',name:'Peatides',qty:5,price:900}],
-   pay:'Credit',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample4',
-   shipper:'Lalamove',shipTo:'99/9 ถนน พุทธมณฑลสาย 4 กรุงเทพ',shipDate:'09/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060021',wStage:'จัดส่งแล้ว',soNote:'',whNote:'',billDocNo:''},
-];
+let ORDERS=[];
 // runNo ถูกคำนวณแบบ dynamic จาก ORDERS — ดู nextOrderNo()
 
 // users: email → display name
@@ -667,8 +630,10 @@ function filterDeleted(orders){
 // คำนวณ No. ถัดไปจาก ORDERS ปัจจุบัน (ไม่ใช้ static counter)
 // ป้องกัน gap เมื่อลบออเดอร์ที่เพิ่งสร้าง
 function nextOrderNo(){
-  if(ORDERS.length===0)return 494;
-  return Math.max(...ORDERS.map(o=>+o.no||0),493)+1;
+  // คำนวณจาก ORDERS ปัจจุบัน ไม่มี hardcode
+  // GAS จะ assign No. จริงอีกครั้งตอน batchSave
+  if(ORDERS.length===0)return 1;
+  return Math.max(...ORDERS.map(o=>+o.no||0))+1;
 }
 const fmt=n=>(+n||0).toLocaleString('th-TH');
 const tot=o=>o.items.reduce((s,i)=>s+(i.price||0)*(i.qty||0),0);
@@ -761,11 +726,12 @@ function doLogout(){
 
 // ── SHELL ─────────────────────────────────────
 function renderShell(){
-  const pending=ORDERS.filter(o=>!o.soOpened).length;
+  // นับจาก ORDERS ที่โหลดแล้วเท่านั้น
+  const pending=ordersLoaded?ORDERS.filter(o=>!o.soOpened).length:0;
   const items=[
     {k:'orders',l:'รายการออเดอร์',i:'list'},
     {k:'new-order',l:'สร้างออเดอร์',i:'plus'},
-    {k:'so-manage',l:'จัดการ SO',i:'doc',badge:pending||''},
+    {k:'so-manage',l:'จัดการ SO',i:'doc',badge:ordersLoaded?(pending||''):'…'},
     {k:'warehouse',l:'สถานะคลัง',i:'warehouse'},
     {k:'products',l:'รายการสินค้า',i:'box'},
   ];
@@ -861,6 +827,7 @@ async function vOrders(){
 
     if(!ok) toast('โหลดไม่สำเร็จ — ข้อมูลอาจไม่ล่าสุด','err');
     else    toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');
+    renderShell(); // อัปเดต sidebar badge หลังโหลดเสร็จ
 
     // ตรวจก่อนว่าผู้ใช้ยังอยู่หน้า orders อยู่ไหม
     if(view!=='orders')return;
