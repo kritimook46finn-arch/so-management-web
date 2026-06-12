@@ -1493,16 +1493,14 @@ function saveProd(old){
 function soTableRows(list){
   const isPending = list[0] && !list[0].soOpened;
   return list.map(o=>`<tr onclick="showOrder(${o.no})">
-    <td><span class="order-no">${o.no}</span></td>
-    <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
+    <td><span class="order-no">${o.no}</span><div style="font-size:10px;color:var(--text3)">${o.date.replace(/\s.*/,'')}</div></td>
     <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
-    <td><div style="font-weight:600;font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
-    <td><span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span></td>
+    <td><div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div></td>
     ${isPending
-      ?`<td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>
-        <td><button class="btn btn-success btn-sm" style="width:100%" onclick="event.stopPropagation();showOrder(${o.no})">เปิด SO</button></td>`
-      :`<td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)">${o.soNo||'—'}</span></td>
-        <td class="order-amount" style="font-size:13px">฿${fmt(tot(o))}</td>`}
+      ?`<td class="order-amount" style="font-size:12px">฿${fmt(tot(o))}</td>
+        <td><button class="btn btn-success btn-sm" style="width:100%;font-size:11px;padding:4px 6px" onclick="event.stopPropagation();showOrder(${o.no})">เปิด SO</button></td>`
+      :`<td><span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--green)">${o.soNo||'—'}</span></td>
+        <td class="order-amount" style="font-size:12px">฿${fmt(tot(o))}</td>`}
   </tr>`).join('');
 }
 
@@ -1542,19 +1540,52 @@ function vSO(){
 
   ${filtered.length===0?`<div class="empty-state">${icon('doc')}<div class="et">ไม่พบออเดอร์ที่ตรงเงื่อนไข</div></div>`:''}
 
-  ${(fSOStatus==='ทั้งหมด'||fSOStatus==='รอเปิด')&&pending.length>0?`
-  <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⏳ รอเปิด SO (${pending.length})</div>
-  <div class="table-wrap" style="margin-bottom:20px;overflow-x:auto">
-    <table class="order-table" style="min-width:560px">
-    <thead><tr><th style="width:58px">No.</th><th style="width:86px">วันที่</th><th style="width:54px">Sale</th><th>ลูกค้า</th><th style="width:86px">ชำระ</th><th style="width:82px;text-align:right">ยอด</th><th style="width:90px"></th></tr></thead>
-    <tbody>${soTableRows(pending)}</tbody></table></div>`:''}
+  <!-- 2-column layout: รอเปิด ซ้าย | เปิดแล้ว ขวา -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
 
-  ${(fSOStatus==='ทั้งหมด'||fSOStatus==='เปิดแล้ว')&&opened.length>0?`
-  <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">✓ เปิด SO แล้ว (${opened.length})</div>
-  <div class="table-wrap" style="overflow-x:auto">
-    <table class="order-table" style="min-width:560px">
-    <thead><tr><th style="width:58px">No.</th><th style="width:86px">วันที่</th><th style="width:54px">Sale</th><th>ลูกค้า</th><th style="width:86px">ชำระ</th><th style="width:140px">เลข SO</th><th style="width:82px;text-align:right">ยอด</th></tr></thead>
-    <tbody>${soTableRows(opened)}</tbody></table></div>`:''}`;
+    <!-- ซ้าย: รอเปิด SO -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        ⏳ รอเปิด SO
+        <span style="background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 8px">${pending.length}</span>
+      </div>
+      ${pending.length===0
+        ?`<div style="padding:16px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);text-align:center">ไม่มีรายการรอ SO</div>`
+        :`<div class="table-wrap" style="overflow-x:auto">
+          <table class="order-table" style="min-width:360px">
+          <thead><tr>
+            <th style="width:50px">No.</th>
+            <th style="width:54px">Sale</th>
+            <th>ลูกค้า</th>
+            <th style="width:80px;text-align:right">ยอด</th>
+            <th style="width:80px"></th>
+          </tr></thead>
+          <tbody>${soTableRows(pending)}</tbody>
+          </table></div>`}
+    </div>
+
+    <!-- ขวา: เปิด SO แล้ว -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        ✓ เปิด SO แล้ว
+        <span style="background:var(--green);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 8px">${opened.length}</span>
+      </div>
+      ${opened.length===0
+        ?`<div style="padding:16px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);text-align:center">ยังไม่มีรายการเปิด SO</div>`
+        :`<div class="table-wrap" style="overflow-x:auto">
+          <table class="order-table" style="min-width:360px">
+          <thead><tr>
+            <th style="width:50px">No.</th>
+            <th style="width:54px">Sale</th>
+            <th>ลูกค้า</th>
+            <th style="width:120px">เลข SO</th>
+            <th style="width:80px;text-align:right">ยอด</th>
+          </tr></thead>
+          <tbody>${soTableRows(opened)}</tbody>
+          </table></div>`}
+    </div>
+
+  </div>`;
 }
 
 // ── WAREHOUSE ─────────────────────────────────
