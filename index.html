@@ -494,44 +494,6 @@ function parseReceiptsCSV(text){
 
 let ordersLoaded=false;
 
-// ── LOAD ORDERS ─────────────────────────────────
-// แยก load logic ออกจาก render — ป้องกัน infinite loop
-async function _loadOrdersAndRender(){
-  try{
-    const useGAS=GAS_URL&&GAS_URL!=='YOUR_APPS_SCRIPT_URL_HERE';
-    let ok=false;
-    if(useGAS){
-      ok=await loadOrdersGAS();
-      if(!ok){
-        // GAS fail → fallback CSV
-        ok=await loadOrdersCSV();
-        if(ok)toast('โหลดออเดอร์ '+ORDERS.length+' รายการ (CSV)','ok');
-      } else {
-        toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');
-      }
-    } else {
-      ok=await loadOrdersCSV();
-      if(ok)toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');
-    }
-    if(!ok)toast('โหลดไม่สำเร็จ','err');
-  }catch(e){
-    console.warn('_loadOrdersAndRender error:',e);
-  }
-  ordersLoaded=true;
-  _renderOrdersContent(); // render ตรงๆ ไม่เรียก vOrders()
-}
-
-// render เฉพาะ content ส่วนตาราง — ไม่มี loading logic
-function _renderOrdersContent(){
-  if(view!=='orders')return; // ผู้ใช้เปลี่ยนหน้าไปแล้ว
-  let list=[...ORDERS];
-  if(sq)list=list.filter(o=>(o.no+''+o.cust+o.sale+(o.soNo||'')).toLowerCase().includes(sq));
-  if(fSale!=='ทั้งหมด')list=list.filter(o=>o.sale===fSale);
-  if(fPay!=='ทั้งหมด')list=list.filter(o=>o.payStatus===fPay);
-  // เรียก vOrders ที่ตอนนี้ ordersLoaded=true → ข้าม loading block ไปเลย
-  vOrders();
-}
-
 // ── LOAD FROM GAS (realtime, no cache) ──────
 // ใช้เมื่อมี GAS_URL — อ่านตรงจาก Sheet ไม่มี cache
 async function loadOrdersGAS(){
@@ -866,22 +828,36 @@ function vDash(){
   <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="nav('orders')">ดูทั้งหมด ${ORDERS.length} รายการ →</button></div>`;
 }
 
-function vOrders(){
-  // ถ้ามี pending orders รอ save → ไม่ reload (ไม่ทำ pending หาย)
-  // ถ้าไม่มี pending → โหลดใหม่จาก Sheet ทุกครั้ง
+async function vOrders(){
+  // ถ้ามี pending รอ save → ไม่ reload
+  // ถ้าไม่มี pending → reload ใหม่ทุกครั้ง
   if(pendingOrders.size===0)ordersLoaded=false;
 
   if(!ordersLoaded){
-    // แสดง spinner
+    // แสดง spinner ก่อน
     document.getElementById('content').innerHTML=`
     <div class="page-header"><div><div class="page-title">รายการออเดอร์</div></div></div>
     <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;flex-direction:column;gap:14px">
       <div style="width:40px;height:40px;border:3px solid var(--green-mid);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
       <div style="font-size:14px;color:var(--text2)">กำลังโหลดออเดอร์จาก Google Sheets…</div>
     </div>`;
-    // โหลดข้อมูล แล้ว render หลัง load เสร็จ — ไม่เรียก vOrders() ซ้ำ
-    _loadOrdersAndRender();
-    return;
+
+    // โหลดข้อมูล (GAS → CSV fallback)
+    const useGAS=GAS_URL&&GAS_URL!=='YOUR_APPS_SCRIPT_URL_HERE';
+    let ok=false;
+    try{
+      if(useGAS) ok=await loadOrdersGAS();
+      if(!ok)    ok=await loadOrdersCSV();
+    }catch(e){ console.warn('load error:',e); }
+
+    ordersLoaded=true; // set ก่อน render เสมอ
+
+    if(!ok) toast('โหลดไม่สำเร็จ — ข้อมูลอาจไม่ล่าสุด','err');
+    else    toast('โหลดออเดอร์ '+ORDERS.length+' รายการ','ok');
+
+    // ตรวจก่อนว่าผู้ใช้ยังอยู่หน้า orders อยู่ไหม
+    if(view!=='orders')return;
+    // fall through → render ข้างล่างเลย (ไม่เรียก vOrders() ซ้ำ)
   }
   let list=[...ORDERS];
   if(sq)list=list.filter(o=>(o.no+''+o.cust+o.sale+(o.soNo||'')).toLowerCase().includes(sq));
