@@ -1672,8 +1672,8 @@ function vSO(){
 
   ${filtered.length===0?`<div class="empty-state">${icon('doc')}<div class="et">ไม่พบออเดอร์ที่ตรงเงื่อนไข</div></div>`:''}
 
-  <!-- 2-column layout: รอเปิด ซ้าย | เปิดแล้ว ขวา -->
-  <div class="so-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+  <!-- Desktop: 2 col -->
+  <div class="so-two-col desktop-only" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
 
     <!-- ซ้าย: รอเปิด SO -->
     <div>
@@ -1684,14 +1684,8 @@ function vSO(){
       ${pending.length===0
         ?`<div style="padding:16px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);text-align:center">ไม่มีรายการรอ SO</div>`
         :`<div class="table-wrap" style="overflow-x:auto">
-          <table class="order-table" style="min-width:360px">
-          <thead><tr>
-            <th style="width:50px">No.</th>
-            <th style="width:54px">Sale</th>
-            <th>ลูกค้า</th>
-            <th style="width:80px;text-align:right">ยอด</th>
-            <th style="width:80px"></th>
-          </tr></thead>
+          <table class="order-table" style="min-width:300px">
+          <thead><tr><th>No.</th><th>Sale</th><th>ลูกค้า</th><th style="text-align:right">ยอด</th><th></th></tr></thead>
           <tbody>${soTableRows(pending)}</tbody>
           </table></div>`}
     </div>
@@ -1705,19 +1699,84 @@ function vSO(){
       ${opened.length===0
         ?`<div style="padding:16px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);text-align:center">ยังไม่มีรายการเปิด SO</div>`
         :`<div class="table-wrap" style="overflow-x:auto">
-          <table class="order-table" style="min-width:360px">
-          <thead><tr>
-            <th style="width:50px">No.</th>
-            <th style="width:54px">Sale</th>
-            <th>ลูกค้า</th>
-            <th style="width:120px">เลข SO</th>
-            <th style="width:80px;text-align:right">ยอด</th>
-          </tr></thead>
+          <table class="order-table" style="min-width:300px">
+          <thead><tr><th>No.</th><th>Sale</th><th>ลูกค้า</th><th>เลข SO</th><th style="text-align:right">ยอด</th></tr></thead>
           <tbody>${soTableRows(opened)}</tbody>
           </table></div>`}
     </div>
+  </div>
 
-  </div>`;
+  <!-- Mobile: single col cards -->
+  <div class="mobile-only" id="so-mobile-cards" style="flex-direction:column;gap:14px"></div>`;
+
+  _renderSOCards(pending, opened);
+}
+
+function _renderSOCards(pending, opened){
+  const el=document.getElementById('so-mobile-cards');
+  if(!el)return;
+  let html='';
+
+  // ── รอเปิด SO ──
+  html+='<div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+      +'<span style="font-size:13px;font-weight:700;color:var(--red)">⏳ รอเปิด SO</span>'
+      +'<span style="background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 8px">'+pending.length+'</span>'
+    +'</div>';
+
+  if(!pending.length){
+    html+='<div style="padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);text-align:center">ไม่มีรายการรอ SO</div>';
+  } else {
+    pending.forEach(function(o){
+      const nm=o.cust.replace(/^[A-Z]\d+ /,'');
+      const dt=(o.date||'').replace(/ \d{2}:\d{2}:\d{2}.*$/,'').trim();
+      html+='<div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="showOrder('+o.no+')">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+          +'<div style="display:flex;align-items:center;gap:8px">'
+            +'<span style="font-family:monospace;font-size:15px;font-weight:800;color:var(--green)">'+o.no+'</span>'
+            +'<span class="sale-badge sale-'+(o.sale||'').toLowerCase()+'">'+o.sale+'</span>'
+          +'</div>'
+          +'<span style="font-size:11px;color:var(--text3)">'+dt+'</span>'
+        +'</div>'
+        +'<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px">'+nm+'</div>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between">'
+          +'<span style="font-size:13px;font-weight:700;color:var(--text2)">฿'+fmt(tot(o))+'</span>'
+          +'<button class="btn btn-success btn-sm" style="padding:5px 14px;font-size:12px" onclick="event.stopPropagation();showOrder('+o.no+')">เปิด SO</button>'
+        +'</div>'
+        +'</div>';
+    });
+  }
+  html+='</div>';
+
+  // ── เปิด SO แล้ว ──
+  html+='<div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+      +'<span style="font-size:13px;font-weight:700;color:var(--green)">✓ เปิด SO แล้ว</span>'
+      +'<span style="background:var(--green);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 8px">'+opened.length+'</span>'
+    +'</div>';
+
+  if(!opened.length){
+    html+='<div style="padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text3);text-align:center">ยังไม่มีรายการเปิด SO</div>';
+  } else {
+    opened.forEach(function(o){
+      const nm=o.cust.replace(/^[A-Z]\d+ /,'');
+      const dt=(o.date||'').replace(/ \d{2}:\d{2}:\d{2}.*$/,'').trim();
+      html+='<div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="showOrder('+o.no+')">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+          +'<div style="display:flex;align-items:center;gap:8px">'
+            +'<span style="font-family:monospace;font-size:15px;font-weight:800;color:var(--green)">'+o.no+'</span>'
+            +'<span class="sale-badge sale-'+(o.sale||'').toLowerCase()+'">'+o.sale+'</span>'
+          +'</div>'
+          +'<span style="font-size:11px;color:var(--text3)">'+dt+'</span>'
+        +'</div>'
+        +'<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px">'+nm+'</div>'
+        +(o.soNo?'<div style="font-family:monospace;font-size:12px;font-weight:700;color:var(--green)">'+o.soNo+'</div>':'')
+        +'</div>';
+    });
+  }
+  html+='</div>';
+
+  el.innerHTML=html;
 }
 
 // ── WAREHOUSE ─────────────────────────────────
