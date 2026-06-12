@@ -321,6 +321,7 @@ a:hover{text-decoration:underline}
 /* ── ORDER CARD (mobile) ── */
 .desktop-only{display:block}
 .mobile-only{display:none}
+.new-order-actions{display:none}
 .order-cards{display:flex;flex-direction:column;gap:8px}
 .order-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;-webkit-tap-highlight-color:transparent}
 .order-card:active{background:var(--green-soft)}
@@ -395,6 +396,8 @@ a:hover{text-decoration:underline}
 
   /* SO page 2-col → 1 col stack */
   .so-two-col{grid-template-columns:1fr !important}
+  /* New order — full width on mobile */
+  .new-order-grid{grid-template-columns:1fr !important}
 
   /* kanban scroll horizontal */
   .kanban{display:flex;flex-direction:row;overflow-x:auto;gap:10px;padding-bottom:4px}
@@ -405,6 +408,7 @@ a:hover{text-decoration:underline}
   .btn{font-size:12px;padding:7px 12px}
   .desktop-only{display:none !important}
   .mobile-only{display:flex !important}
+  .new-order-actions{display:flex !important;gap:6px}
 }
 </style>
 </head>
@@ -1223,10 +1227,22 @@ function vNew(){
   const ci=Object.entries(draft.items).filter(([,v])=>v.qty>0);
   const ct=ci.reduce((s,[,v])=>s+v.price*v.qty,0);
   document.getElementById('content').innerHTML=`
-  <div class="page-header">
-    <div><div class="page-title">${draft._editNo?'แก้ไขออเดอร์ No.'+draft._editNo:'สร้างออเดอร์ใหม่'}</div><div class="page-sub">${draft._editNo?'แก้ไขข้อมูลออเดอร์เดิม':'กรอกข้อมูล เลือกสินค้า แล้วกดบันทึก'}</div></div>
+  <div class="page-header" style="align-items:center">
+    <div style="flex:1;min-width:0">
+      <div class="page-title">${draft._editNo?'แก้ไขออเดอร์ No.'+draft._editNo:'สร้างออเดอร์ใหม่'}</div>
+      <div class="page-sub">${draft._editNo?'แก้ไขข้อมูล':'กรอกข้อมูล เลือกสินค้า แล้วกดบันทึก'}</div>
+    </div>
+    <!-- ปุ่ม mobile — แสดงเฉพาะมือถือ -->
+    <div class="mobile-only new-order-actions" style="gap:6px;flex-shrink:0">
+      <button class="btn btn-ghost btn-sm" onclick="draft=null;prodSq='';nav('orders')" style="padding:7px 12px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="saveOrder()"
+        ${!draft.sale||!draft.cust||!draft.pay||ci.length===0?'disabled':''}
+        style="padding:7px 14px;font-weight:700">
+        ${draft._editNo?'บันทึก':'สร้าง'}
+      </button>
+    </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start">
+  <div class="new-order-grid" style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start">
     <div>
       <!-- ข้อมูลออเดอร์ -->
       <div class="card" style="margin-bottom:14px">
@@ -1334,7 +1350,7 @@ function vNew(){
     </div>
 
     <!-- สรุปออเดอร์ (sticky) -->
-    <div style="position:sticky;top:16px">
+    <div style="position:sticky;top:16px" class="desktop-only">
       <div class="card">
         <div class="card-title">สรุปออเดอร์</div>
         ${ci.length===0
