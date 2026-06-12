@@ -137,7 +137,7 @@ a:hover{text-decoration:underline}
 .pipe-step:first-child{border-radius:5px 0 0 5px}
 .pipe-step:last-child{border-radius:0 5px 5px 0}
 .pipe-step svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;flex-shrink:0}
-.pipe-done{background:var(--green-mid);color:var(--green-dark)}
+.pipe-done{background:var(--green);color:#fff}
 .pipe-active{background:var(--green);color:#fff}
 .pipe-wait{background:var(--surface3);color:var(--text3)}
 .pipe-sep{color:var(--border2);font-size:10px;line-height:1}
@@ -278,18 +278,24 @@ a:hover{text-decoration:underline}
 .prod-card:hover{border-color:var(--green);transform:translateY(-1px);box-shadow:var(--shadow-md)}
 
 /* WAREHOUSE KANBAN */
-.kanban{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.kanban-col{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
-.kanban-head{padding:12px 14px;font-size:12px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.kanban-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:80px}
+
+/* KANBAN v2 */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:1100px){.kanban{grid-template-columns:1fr}}
+.kanban-col{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.kanban-head{padding:12px 16px;font-size:13px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.kanban-head-badge{font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;background:var(--bg)}
+.kanban-body{padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:600px}
 .kanban-card{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;cursor:pointer;transition:all .12s}
-.kanban-card:hover{border-color:var(--green);background:#F0FDF9}
-.kanban-card-no{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green)}
-.kanban-card-cust{font-size:12px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.kanban-card-so{font-family:var(--mono);font-size:10px;color:var(--green);margin-top:3px}
-.kanban-card-actions{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
-.ks-btn{padding:3px 9px;border-radius:99px;font-size:10px;font-weight:700;border:1.5px solid var(--border2);background:#fff;color:var(--text3);cursor:pointer;transition:all .12s}
-.ks-btn:hover{border-color:var(--green);color:var(--green)}
+.kanban-card:hover{border-color:var(--green);background:#F0FDF9;transform:translateY(-1px);box-shadow:var(--shadow)}
+.kanban-card-no{font-family:var(--mono);font-size:12px;font-weight:800;color:var(--green)}
+.kanban-card-cust{font-size:12px;font-weight:600;color:var(--text);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kanban-card-bill{font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kanban-card-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px}
+.kanban-card-date{font-size:10px;color:var(--text3)}
+.kanban-card-btns{display:flex;gap:3px;flex-wrap:nowrap}
+.ks-btn{padding:3px 7px;border-radius:5px;font-size:10px;font-weight:700;border:1.5px solid var(--border2);background:#fff;color:var(--text3);cursor:pointer;transition:all .12s;white-space:nowrap}
+.ks-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-soft)}
 .ks-btn.ks-open{border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
 .ks-btn.ks-prep{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
 .ks-btn.ks-ship{border-color:var(--green);background:var(--green-soft);color:var(--green)}
@@ -480,6 +486,7 @@ function parseReceiptsCSV(text){
       wStage:(r[22]||'').trim(),
       soNote:'',
       whNote:'',
+      billDocNo:(r[23]||'').trim(),
     });
   }
   return orders.reverse();
@@ -559,37 +566,37 @@ let ORDERS=[
    pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
    shipper:'Lalamove',shipTo:'แจ้งป้อมยาม บริษัท ไบโอแกรนด์ จำกัด เลขที่ 6 หมู่ที่ 2 ตำบล หน้าไม้ อำเภอลาดหลุมแก้ว ปทุมธานี 12140',
    shipDate:'12/06/2026',note:'ทำใบส่งของ 2 ฉบับ พร้อมลายเซ็นต์คนขับรถ + COA ให้โรงงาน',
-   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:''},
+   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''},
   {no:489,date:'10/06/2026',sale:'Golf',cust:'L030022 บจก. ไอ เฮิร์บ คอร์ปอเรชั่น',
    items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:100,price:160}],
    pay:'Cash',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample',
    shipper:'Lalamove',shipTo:'เลขที่ 896 898 ซอย รามคำแหง 64',shipDate:'15/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060027',wStage:'จัดส่งแล้ว',soNote:'',whNote:''},
+   soOpened:true,soNo:'SOIN26060027',wStage:'จัดส่งแล้ว',soNote:'',whNote:'',billDocNo:''},
   {no:488,date:'09/06/2026',sale:'Pea',cust:'L030079 บจก. นอร์เบิร์ต อินโนเวชั่น',
    items:[{id:'100201000',name:'Pumpkin seed protein',qty:20,price:550}],
    pay:'Cash',payStatus:'ยังไม่ชำระ',po:'',
    shipper:'Lalamove',shipTo:'8/17 หมู่ที่ 8 ต.คลองสอง อ.คลองหลวง ปทุมธานี',shipDate:'12/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060025',wStage:'เตรียมของแล้ว',soNote:'',whNote:''},
+   soOpened:true,soNo:'SOIN26060025',wStage:'เตรียมของแล้ว',soNote:'',whNote:'',billDocNo:''},
   {no:487,date:'09/06/2026',sale:'Oil',cust:'L030093 บจก.บียอนด์ แล็บโบราโทรี่',
    items:[{id:'400200301',name:'Brown Rice Protein 1kg',qty:1,price:590}],
    pay:'Cash',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample2',
    shipper:'Flash',shipTo:'555/121 บี อเวนิว วัชรพล ถ.สุขาภิบาล ๕ กรุงเทพ 10220',shipDate:'15/06/2026',note:'ขอใบแจ้งหนี้',
-   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:''},
+   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''},
   {no:486,date:'09/06/2026',sale:'Golf',cust:'L030015 บริษัท ฟอร์แคร์ อินโน จำกัด',
    items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160}],
    pay:'Credit',payStatus:'ยังไม่ชำระ',po:'https://drive.google.com/file/sample3',
    shipper:'ย้ายไปคลัง 4care',shipTo:'คลัง 4care',shipDate:'10/06/2026',note:'ทะยอยเรียกเข้า อย่างละ 500 kg.',
-   soOpened:true,soNo:'SOIN26060023',wStage:'เปิดบิลแล้ว',soNote:'',whNote:''},
+   soOpened:true,soNo:'SOIN26060023',wStage:'เปิดบิลแล้ว',soNote:'',whNote:'',billDocNo:''},
   {no:485,date:'09/06/2026',sale:'Golf',cust:'บริษัท อินน็อกเซ่ลลา จำกัด',
    items:[{id:'100201200',name:'Pea Protein HYPP-BE',qty:500,price:160},{id:'100203000',name:'Rice protein powder 600 mesh',qty:1000,price:250}],
    pay:'Credit',payStatus:'ยังไม่ชำระ',po:'',
    shipper:'Lalamove',shipTo:'CM Factory 91-819-3877 คุณฝน',shipDate:'11/06/2026',note:'',
-   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:''},
+   soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''},
   {no:484,date:'08/06/2026',sale:'Golf',cust:'L030016 บริษัท ชาร์แมซ คอสเมด จำกัด',
    items:[{id:'100200500',name:'Peatides',qty:5,price:900}],
    pay:'Credit',payStatus:'ชำระแล้ว',po:'https://drive.google.com/file/sample4',
    shipper:'Lalamove',shipTo:'99/9 ถนน พุทธมณฑลสาย 4 กรุงเทพ',shipDate:'09/06/2026',note:'',
-   soOpened:true,soNo:'SOIN26060021',wStage:'จัดส่งแล้ว',soNote:'',whNote:''},
+   soOpened:true,soNo:'SOIN26060021',wStage:'จัดส่งแล้ว',soNote:'',whNote:'',billDocNo:''},
 ];
 let runNo=491;
 
@@ -695,7 +702,7 @@ function doLogout(){
 
 // ── SHELL ─────────────────────────────────────
 function renderShell(){
-  const pending=ORDERS.filter(o=>!o.soOpened).length;
+  const pending=ORDERS.filter(o=>!o.soOpened&&o.no>=350).length;
   const items=[
     {k:'orders',l:'รายการออเดอร์',i:'list'},
     {k:'new-order',l:'สร้างออเดอร์',i:'plus'},
@@ -909,6 +916,10 @@ function showOrder(no){
         return '<button onclick="setWS('+o.no+',\''+s+'\')" style="padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid '+(active?col:'var(--border2)')+';background:'+(active?col:'#fff')+';color:'+(active?'#fff':'var(--text3)')+'">'+s+'</button>';
       }).join('')}
     </div>
+    ${o.billDocNo?`<div style="margin-bottom:8px;padding:8px 10px;background:var(--blue-soft);border-radius:var(--r-sm);border:1px solid rgba(37,99,235,.15)">
+      <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">เลขเอกสารเปิดบิล (คลัง)</div>
+      <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--blue)">${o.billDocNo}</div>
+    </div>`:''}
     <div class="form-group">
       <label class="form-label" style="color:var(--text3);font-weight:600">หมายเหตุคลัง</label>
       <textarea id="wh-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับการจัดส่ง…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveWHNote(${o.no},this.value)">${o.whNote||''}</textarea>
@@ -1285,30 +1296,35 @@ function vWH(){
     <div><div class="page-title">สถานะคลัง</div><div class="page-sub">No.350+ · มี SO แล้ว ${list.length} รายการ</div></div>
   </div>
   <div class="kanban">
-  ${cols.map(([s,c])=>`
+  ${cols.map(([s,col])=>`
   <div class="kanban-col">
-    <div class="kanban-head" style="border-top:3px solid ${c}"><span>${s}</span><span style="font-size:11px;background:var(--bg);padding:2px 8px;border-radius:99px;color:var(--text3)">${grp[s].length}</span></div>
+    <div class="kanban-head" style="border-top:3px solid ${col}">
+      <span style="color:${col}">${s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚'} ${s}</span>
+      <span class="kanban-head-badge" style="color:${col}">${grp[s].length}</span>
+    </div>
     <div class="kanban-body">
-    ${grp[s].length===0?`<div style="font-size:12px;color:var(--text3);padding:8px 4px">ไม่มีออเดอร์</div>`:
-    grp[s].map(o=>`
-    <div class="kanban-card" onclick="showOrder(${o.no})">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="kanban-card-no">${o.no}</span>
-        <span style="font-family:var(--mono);font-size:10px;color:var(--green)">${o.soNo}</span>
-      </div>
-      <div class="kanban-card-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-        <span style="font-size:10px;color:var(--text3)">${o.shipDate}</span>
-        <div class="kanban-card-actions">
-          ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(st=>{
-            const act=o.wStage===st;
-            const cl=act?(st==='เปิดบิลแล้ว'?'ks-open':st==='เตรียมของแล้ว'?'ks-prep':'ks-ship'):'';
-            const lbl=st.replace('แล้ว','');
-            return`<button class="ks-btn ${cl}" onclick="event.stopPropagation();setWS(${o.no},'${st}');render(false)">${lbl}</button>`;
-          }).join('')}
+    ${grp[s].length===0
+      ?`<div style="font-size:12px;color:var(--text3);padding:16px 4px;text-align:center">ไม่มีออเดอร์</div>`
+      :grp[s].map(o=>`
+      <div class="kanban-card" onclick="showOrder(${o.no})">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+          <span class="kanban-card-no">${o.no}</span>
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${o.date}</span>
         </div>
-      </div>
-    </div>`).join('')}
+        <div class="kanban-card-cust">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
+        ${(o.billDocNo||o.soNo)?`<div class="kanban-card-bill">${o.billDocNo||o.soNo}</div>`:''}
+        <div class="kanban-card-meta">
+          <span class="kanban-card-date">${o.shipDate?'ส่ง '+o.shipDate:''}</span>
+          <div class="kanban-card-btns">
+            ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(st=>{
+              const act=o.wStage===st;
+              const cl=act?(st==='เปิดบิลแล้ว'?'ks-open':st==='เตรียมของแล้ว'?'ks-prep':'ks-ship'):'';
+              const lbl=st==='เปิดบิลแล้ว'?'บิล':st==='เตรียมของแล้ว'?'เตรียม':'จัดส่ง';
+              return`<button class="ks-btn ${cl}" onclick="event.stopPropagation();setWS(${o.no},'${st}');render(false)">${lbl}</button>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>`).join('')}
     </div>
   </div>`).join('')}
   </div>`;
