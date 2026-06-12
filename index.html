@@ -412,7 +412,7 @@ a:hover{text-decoration:underline}
 </div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbxZl8GVrS09lePODrJ6jxFT6M_qzwPRvpo8Aa1fn2kOJSI4t6dSte6EnsIzGEP2wd4/exec';
+const GAS_URL='https://script.google.com/macros/s/AKfycbwpDibAGed4-A8msnzgigQgoB1E6tQEgFo5EWr_nSCCEeyEEkRzW6vZGL88ULaW_VYF/exec';
 
 // ── RECEIPTS CSV URL ──────────────────────────
 const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXcauzirmrhkUV86lN3C_uZZI33zhPJ-4f0ufqZOBPoOK_pwSjtmibCDd0ucZWohKAHiy4KMvOhu1b/pub?gid=1734187699&single=true&output=csv';
@@ -1052,7 +1052,7 @@ function vNew(){
   const ct=ci.reduce((s,[,v])=>s+v.price*v.qty,0);
   document.getElementById('content').innerHTML=`
   <div class="page-header">
-    <div><div class="page-title">สร้างออเดอร์ใหม่</div><div class="page-sub">กรอกข้อมูล เลือกสินค้า แล้วกดบันทึก</div></div>
+    <div><div class="page-title">${draft._editNo?'แก้ไขออเดอร์ No.'+draft._editNo:'สร้างออเดอร์ใหม่'}</div><div class="page-sub">${draft._editNo?'แก้ไขข้อมูลออเดอร์เดิม':'กรอกข้อมูล เลือกสินค้า แล้วกดบันทึก'}</div></div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start">
     <div>
@@ -1180,7 +1180,7 @@ function vNew(){
           </div>`}
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
           <button class="btn btn-primary" ${!draft.sale||!draft.cust||!draft.pay||ci.length===0?'disabled':''} onclick="saveOrder()" style="width:100%;justify-content:center">
-            ${icon('plus')} บันทึกออเดอร์
+            ${icon('plus')} ${draft._editNo?'บันทึกการแก้ไข':'สร้างออเดอร์'}
           </button>
           <button class="btn btn-ghost" onclick="draft=null;prodSq='';nav('orders')" style="width:100%;justify-content:center">ยกเลิก</button>
         </div>
@@ -1207,23 +1207,67 @@ function setQ(pid,price,qty){
 }
 function saveOrder(){
   const items=Object.entries(draft.items).filter(([,v])=>v.qty>0).map(([id,v])=>({id,name:v.name,qty:v.qty,price:v.price}));
-  const no=runNo++;
-  const now=new Date();
-  const d=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()}`;
-  const o={...draft,no,date:d,items,soOpened:false,soNo:'',wStage:''};
-  ORDERS.unshift(o);draft=null;
-  toast(`บันทึกออเดอร์ No.${no} แล้ว`,'ok');
-  sync('NEW_ORDER',o);nav('orders');
+  const isEdit = draft._editNo != null;  // มาจาก editOrder()
+
+  if(isEdit){
+    // ── UPDATE ออเดอร์เดิม ──
+    const no=draft._editNo;
+    const idx=ORDERS.findIndex(x=>x.no===no);
+    if(idx>=0){
+      // รักษา field SO/warehouse ไว้ เปลี่ยนแค่ field ที่ user แก้ได้
+      const existing=ORDERS[idx];
+      const o={
+        ...existing,          // คง soOpened, soNo, wStage, soNote, whNote, billDocNo
+        sale:draft.sale,
+        cust:draft.cust,
+        pay:draft.pay,
+        payStatus:draft.payStatus,
+        po:draft.po,
+        shipper:draft.shipper,
+        shipTo:draft.shipTo,
+        shipDate:draft.shipDate,
+        note:draft.note,
+        items,
+      };
+      ORDERS[idx]=o;
+      draft=null;
+      toast(`บันทึกการแก้ไข No.${no} แล้ว`,'ok');
+      sync('UPDATE_ORDER',{
+        no,
+        sale:o.sale, cust:o.cust,
+        pay:o.pay, payStatus:o.payStatus,
+        po:o.po, shipper:o.shipper,
+        shipTo:o.shipTo, shipDate:o.shipDate,
+        note:o.note,
+        items:o.items,
+      });
+    }
+  } else {
+    // ── NEW ออเดอร์ใหม่ ──
+    const no=runNo++;
+    const now=new Date();
+    const d=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()}`;
+    const o={...draft,no,date:d,items,soOpened:false,soNo:'',wStage:'',soNote:'',whNote:'',billDocNo:''};
+    ORDERS.unshift(o);
+    draft=null;
+    toast(`สร้างออเดอร์ No.${no} แล้ว`,'ok');
+    sync('NEW_ORDER',o);
+  }
+  nav('orders');
 }
 function editOrder(no){
   const o=ORDERS.find(x=>x.no===no);
-  draft={...o,items:Object.fromEntries(o.items.map(i=>[i.id,{qty:i.qty,price:i.price,name:i.name}]))};
+  draft={
+    ...o,
+    _editNo:no,   // marker บอก saveOrder ว่าเป็น edit ไม่ใช่ new
+    items:Object.fromEntries(o.items.map(i=>[i.id,{qty:i.qty,price:i.price,name:i.name}]))
+  };
   closeModal('m-order');nav('new-order');
 }
 function confirmDeleteOrder(no){
   const o=ORDERS.find(x=>x.no===no);if(!o)return;
   document.getElementById('delete-confirm-msg').innerHTML=
-    `ต้องการลบ <strong>No. ${no}</strong> — ${o.cust.replace(/^[A-Z]\d+ /,'')} ออกจากรายการ?<br><span style="font-size:12px;color:var(--text3);margin-top:4px;display:block">ข้อมูลจะหายเฉพาะในหน้านี้</span>`;
+    `ต้องการลบ <strong>No. ${no}</strong> — ${o.cust.replace(/^[A-Z]\d+ /,'')} ออกจากรายการ?<br><span style="font-size:12px;color:var(--text3);margin-top:4px;display:block">ข้อมูลจะถูกลบออกจาก Google Sheets ด้วย</span>`;
   const btn=document.getElementById('delete-confirm-btn');
   btn.onclick=()=>{deleteOrder(no);closeModal('m-delete');};
   openModal('m-delete');
@@ -1233,6 +1277,7 @@ function deleteOrder(no){
   closeModal('m-order');
   render(false);
   toast(`ลบออเดอร์ No.${no} แล้ว`,'ok');
+  sync('DELETE_ORDER',{no});
 }
 
 // ── PRODUCTS ─────────────────────────────────
