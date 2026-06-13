@@ -2129,8 +2129,8 @@ function vWH(){
         <div class="page-sub">มีเลขเอกสารเปิดบิล (คลัง) แล้ว ${list.filter(o=>o.billDocNo).length} รายการ</div>
       </div>
     </div>
-    <!-- Filter bar -->
-    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch">
+    <!-- Filter bar — scroll แนวนอนได้ ไม่ถูก clip -->
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px;">
       <button onclick="fWHStage='ทั้งหมด';render(false)" style="
         padding:8px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
         border:2px solid ${allActive?'var(--green)':'var(--border2)'};
