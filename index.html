@@ -331,7 +331,7 @@ a:hover{text-decoration:underline}
 .cust-dropdown{
   position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:200;
   background:#fff;border:1.5px solid var(--green);border-radius:var(--r-sm);
-  max-height:240px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);
+  max-height:360px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);-webkit-overflow-scrolling:touch;
   display:none;
 }
 .cust-dropdown.open{display:block}
@@ -796,9 +796,9 @@ async function loadCustomers(){
 }
 
 function custSearch(q){
-  if(!q)return CUSTOMERS.slice(0,40);
+  if(!q)return CUSTOMERS.slice(0,200);
   const lq=q.toLowerCase();
-  return CUSTOMERS.filter(x=>x.full.toLowerCase().includes(lq)||x.code.toLowerCase().includes(lq)).slice(0,40);
+  return CUSTOMERS.filter(x=>x.full.toLowerCase().includes(lq)||x.code.toLowerCase().includes(lq)).slice(0,200);
 }
 
 function custDropdownHTML(q){
