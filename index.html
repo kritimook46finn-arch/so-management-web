@@ -407,15 +407,34 @@ a:hover{text-decoration:underline}
   .modal-overlay{
     padding:0;
     align-items:flex-end;
-    /* padding-top เผื่อ topbar (48px) + safe area */
-    padding-top:calc(48px + env(safe-area-inset-top, 0px));
   }
   .modal-box{
     max-width:100% !important;
     border-radius:16px 16px 0 0;
-    /* ไม่เกิน viewport ที่เหลือหลังหักส่วน topbar */
-    max-height:calc(100vh - 48px - env(safe-area-inset-top, 0px));
+    /* แสดงได้สูงสุด 90vh เพื่อให้ header ไม่ถูกบัง */
+    max-height:90vh;
+    /* ต้อง overflow:hidden เพื่อให้ header แสดง sticky ด้านบน */
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
   }
+  /* modal-head sticky ด้านบน */
+  .modal-head{
+    flex-shrink:0;
+    position:sticky;
+    top:0;
+    z-index:10;
+    background:#fff;
+  }
+  /* modal-foot sticky ด้านล่าง */
+  .modal-foot{
+    flex-shrink:0;
+    position:sticky;
+    bottom:0;
+    background:#fff;
+  }
+  /* detail-no-big เล็กลงนิดบนมือถือ */
+  .detail-no-big{font-size:22px}
 
   /* SO page 2-col → 1 col stack */
   .so-two-col{grid-template-columns:1fr !important}
