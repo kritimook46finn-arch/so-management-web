@@ -326,6 +326,23 @@ a:hover{text-decoration:underline}
 .order-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;-webkit-tap-highlight-color:transparent}
 .order-card:active{background:var(--green-soft)}
 .pending-card{background:#FFFBEB !important}
+/* Combobox customer */
+.cust-wrap{position:relative}
+.cust-dropdown{
+  position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:200;
+  background:#fff;border:1.5px solid var(--green);border-radius:var(--r-sm);
+  max-height:240px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);
+  display:none;
+}
+.cust-dropdown.open{display:block}
+.cust-opt{
+  padding:10px 14px;cursor:pointer;font-size:13px;
+  border-bottom:1px solid var(--border);line-height:1.4;
+}
+.cust-opt:last-child{border-bottom:none}
+.cust-opt:hover,.cust-opt.focused{background:var(--green-soft)}
+.cust-opt-code{font-family:var(--mono);font-size:11px;color:var(--text3);display:block;margin-top:1px}
+.cust-opt mark{background:#DCFCE7;color:var(--green-dark);border-radius:2px;padding:0 1px;font-weight:700}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── MOBILE BOTTOM NAV ── */
@@ -593,6 +610,108 @@ function parseReceiptsCSV(text){
 }
 
 let ordersLoaded=false;
+
+// ── CUSTOMER LIST (from Sup sheet CSV) ──────
+const SUP_CSV='https://docs.google.com/spreadsheets/d/e/2PACX-1vSM4xfURCJUEZZD2t4WqSP294sbeHbSRNLuRpIZTGEvqOqH9yChlrUGD1pbzjLDNv0Aou5BTuwX_FQW/pub?gid=0&single=true&output=csv';
+let CUSTOMERS=[];   // [{code, name, full}]
+let custLoaded=false;
+
+async function loadCustomers(){
+  if(custLoaded)return;
+  try{
+    const res=await fetch(SUP_CSV+'&_t='+Date.now());
+    const text=await res.text();
+    const lines=text.split('\n').slice(1); // skip header
+    CUSTOMERS=[];
+    lines.forEach(line=>{
+      if(!line.trim())return;
+      const cols=parseCSVLine(line);
+      const code=(cols[0]||'').trim();
+      const name=(cols[1]||'').trim();
+      if(name){CUSTOMERS.push({code,name,full:code?(code+' '+name):name});}
+    });
+    custLoaded=true;
+    console.log('[customers] loaded',CUSTOMERS.length);
+  }catch(e){
+    console.warn('[customers] load failed:',e.message);
+  }
+}
+
+function custSearch(q){
+  if(!q)return CUSTOMERS.slice(0,40);
+  const lq=q.toLowerCase();
+  return CUSTOMERS.filter(x=>x.full.toLowerCase().includes(lq)||x.code.toLowerCase().includes(lq)).slice(0,40);
+}
+
+function custDropdownHTML(q){
+  const list=custSearch(q);
+  if(!list.length)return '<div class="cust-opt" style="color:var(--text3)">ไม่พบบริษัทในรายการ — พิมพ์เพื่อบันทึกชื่อใหม่</div>';
+  return list.map((x,i)=>{
+    const hl=q?x.full.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>'):x.full;
+    return `<div class="cust-opt${i===0?' focused':''}" onmousedown="pickCust(event,'${x.full.replace(/'/g,'&#39;')}')" data-idx="${i}">${hl}</div>`;
+  }).join('');
+}
+
+function pickCust(e,val){
+  e.preventDefault();
+  draft.cust=val;
+  const inp=document.getElementById('cust-input');
+  if(inp){inp.value=val;}
+  closeCustDD();
+  // update save button state
+  render(false);
+}
+
+function openCustDD(){
+  const dd=document.getElementById('cust-dd');
+  if(!dd)return;
+  const inp=document.getElementById('cust-input');
+  dd.innerHTML=custDropdownHTML(inp?inp.value:'');
+  dd.classList.add('open');
+}
+
+function onCustKeydown(e){
+  const dd=document.getElementById('cust-dd');
+  if(!dd||!dd.classList.contains('open'))return;
+  const opts=dd.querySelectorAll('.cust-opt[data-idx]');
+  const focused=dd.querySelector('.cust-opt.focused');
+  let idx=focused?+focused.dataset.idx:-1;
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    const next=Math.min(idx+1,opts.length-1);
+    opts.forEach(o=>o.classList.remove('focused'));
+    if(opts[next]){opts[next].classList.add('focused');opts[next].scrollIntoView({block:'nearest'});}
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    const prev=Math.max(idx-1,0);
+    opts.forEach(o=>o.classList.remove('focused'));
+    if(opts[prev]){opts[prev].classList.add('focused');opts[prev].scrollIntoView({block:'nearest'});}
+  } else if(e.key==='Enter'){
+    e.preventDefault();
+    if(focused&&focused.dataset.idx!==undefined){focused.dispatchEvent(new MouseEvent('mousedown'));}
+    else{closeCustDD();}
+  } else if(e.key==='Escape'){
+    closeCustDD();
+  }
+}
+
+function closeCustDD(){
+  const dd=document.getElementById('cust-dd');
+  if(dd)dd.classList.remove('open');
+}
+
+function onCustInput(val){
+  draft.cust=val;
+  const dd=document.getElementById('cust-dd');
+  if(!dd)return;
+  if(val.length>0){
+    dd.innerHTML=custDropdownHTML(val);
+    dd.classList.add('open');
+  } else {
+    dd.innerHTML=custDropdownHTML('');
+    dd.classList.add('open');
+  }
+}
 
 // ── LOAD FROM GAS (realtime, no cache) ──────
 // ใช้เมื่อมี GAS_URL — อ่านตรงจาก Sheet ไม่มี cache
@@ -1232,6 +1351,7 @@ function setPrice(pid,origPrice,newPrice){
 
 // ── NEW ORDER ─────────────────────────────────
 function vNew(){
+  loadCustomers(); // preload ล่วงหน้า
   if(!draft)draft={sale:'',cust:'',pay:'',payStatus:'ยังไม่ชำระ',po:'',shipper:'',shipTo:'',shipDate:'',note:'',items:{}};
   // กรองสินค้าด้วย prodSq (แยกจาก topbar sq)
   let prods=PRODUCTS;
@@ -1270,7 +1390,17 @@ function vNew(){
           </div>
           <div class="form-group span2">
             <label class="form-label">ชื่อบริษัทลูกค้า <span class="req">*</span></label>
-            <input placeholder="เช่น L030043 บจก. แพลนเต้ ไลฟ์" value="${draft.cust}" oninput="draft.cust=this.value">
+            <div class="cust-wrap">
+              <input id="cust-input"
+                placeholder="ค้นหาหรือพิมพ์ชื่อบริษัท..."
+                value="${draft.cust}"
+                autocomplete="off"
+                oninput="onCustInput(this.value)"
+                onfocus="loadCustomers().then(()=>openCustDD())"
+                onblur="setTimeout(closeCustDD,200)"
+                onkeydown="onCustKeydown(event)">
+              <div class="cust-dropdown" id="cust-dd"></div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">สถานะชำระ</label>
