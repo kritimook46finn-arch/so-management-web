@@ -406,34 +406,34 @@ a:hover{text-decoration:underline}
   /* modal full screen on mobile */
   .modal-overlay{
     padding:0;
+    /* กัน safe area ด้านบน (notch/dynamic island) */
+    padding-top:max(env(safe-area-inset-top, 20px), 20px);
     align-items:flex-end;
   }
   .modal-box{
     max-width:100% !important;
     border-radius:16px 16px 0 0;
-    /* แสดงได้สูงสุด 90vh เพื่อให้ header ไม่ถูกบัง */
-    max-height:90vh;
-    /* ต้อง overflow:hidden เพื่อให้ header แสดง sticky ด้านบน */
+    max-height:calc(100svh - max(env(safe-area-inset-top, 20px), 20px));
     overflow:hidden;
     display:flex;
     flex-direction:column;
   }
-  /* modal-head sticky ด้านบน */
   .modal-head{
     flex-shrink:0;
     position:sticky;
     top:0;
     z-index:10;
     background:#fff;
+    border-bottom:1px solid var(--border);
   }
-  /* modal-foot sticky ด้านล่าง */
   .modal-foot{
     flex-shrink:0;
     position:sticky;
     bottom:0;
     background:#fff;
+    /* เผื่อ home indicator ด้านล่าง */
+    padding-bottom:max(env(safe-area-inset-bottom, 0px), 0px);
   }
-  /* detail-no-big เล็กลงนิดบนมือถือ */
   .detail-no-big{font-size:22px}
 
   /* SO page 2-col → 1 col stack */
