@@ -404,11 +404,17 @@ a:hover{text-decoration:underline}
   .field-grid2{grid-template-columns:1fr}
 
   /* modal full screen on mobile */
-  .modal-overlay{padding:0;align-items:flex-end}
+  .modal-overlay{
+    padding:0;
+    align-items:flex-end;
+    /* padding-top เผื่อ topbar (48px) + safe area */
+    padding-top:calc(48px + env(safe-area-inset-top, 0px));
+  }
   .modal-box{
     max-width:100% !important;
     border-radius:16px 16px 0 0;
-    max-height:92vh;
+    /* ไม่เกิน viewport ที่เหลือหลังหักส่วน topbar */
+    max-height:calc(100vh - 48px - env(safe-area-inset-top, 0px));
   }
 
   /* SO page 2-col → 1 col stack */
