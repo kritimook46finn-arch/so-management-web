@@ -2211,20 +2211,34 @@ function _renderOrderCards(list){
     const pend=pendingOrders.has(o.no);
     const delBtn='<button class="btn btn-danger btn-sm" style="padding:5px 8px;flex-shrink:0" onclick="event.stopPropagation();confirmDeleteOrder('+o.no+')">'
       +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
+
+    // เลข SO — แสดงหลัง badge ชำระ
+    const soTag=o.soOpened&&o.soNo
+      ?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:4px;padding:1px 5px">'+o.soNo+'</span>'
+      :'';
+
+    // pipeline html (inline mini)
+    const pipeHtml=pipe(o);
+
     return '<div class="order-card'+(pend?' pending-card':'')+'" onclick="showOrder('+o.no+')">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
-        +'<div style="display:flex;align-items:center;gap:7px">'
-          +'<span style="font-family:monospace;font-size:16px;font-weight:800;color:var(--green)">'+o.no+'</span>'
+      // แถว 1: No + Sale + ชำระ + SO + ปุ่มลบ
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px">'
+        +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;overflow:hidden">'
+          +'<span style="font-family:monospace;font-size:16px;font-weight:800;color:var(--green);flex-shrink:0">'+o.no+'</span>'
           +'<span class="sale-badge sale-'+(o.sale||'').toLowerCase()+'">'+o.sale+'</span>'
           +'<span class="badge '+(o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid')+'">'+o.payStatus+'</span>'
-        +'</div>'+delBtn
+          +soTag
+        +'</div>'
+        +delBtn
       +'</div>'
+      // แถว 2: ชื่อบริษัท
       +'<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nm+'</div>'
+      // แถว 3: รหัส · วันที่
       +(cd||dt?'<div style="font-size:11px;color:var(--text3)">'+(cd||'')+(cd&&dt?' · ':'')+dt+'</div>':'')
-      +'<div style="display:flex;align-items:center;justify-content:space-between">'
-        +(o.soOpened&&o.soNo?'<span style="font-family:monospace;font-size:11px;color:var(--green);font-weight:700">'+o.soNo+'</span>':'<span></span>')
-        +'<span style="font-weight:800;font-size:16px;color:var(--green)">฿'+fmt(tot(o))+'</span>'
-      +'</div>'
+      // แถว 4: pipeline
+      +'<div style="margin-top:2px">'+pipeHtml+'</div>'
+      // แถว 5: ยอดเงิน
+      +'<div style="text-align:right;font-weight:800;font-size:15px;color:var(--green)">฿'+fmt(tot(o))+'</div>'
       +'</div>';
   }).join('');
 }
