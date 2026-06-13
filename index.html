@@ -2112,12 +2112,9 @@ function vWH(){
     const cnt=grp[s].length;
     const active=fWHStage===s;
     const em=s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚';
-    return `<button onclick="fWHStage='${s}';render(false)" style="
-      padding:8px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
-      border:2px solid ${active?col:'var(--border2)'};
-      background:${active?col:'#fff'};
-      color:${active?'#fff':col};
-      transition:all .15s">${em} ${s} <span style="opacity:.75">(${cnt})</span></button>`;
+    // ใช้ filter-chip เหมือน SO filter — active ใช้สีตาม stage
+    const activeCss=active?`background:${col};border-color:${col};color:#fff`:'';
+    return `<button class="filter-chip ${active?'active':''}" onclick="fWHStage='${s}';render(false)" style="${activeCss}">${em} ${s} (${cnt})</button>`;
   }).join('');
   const allActive=fWHStage==='ทั้งหมด';
 
@@ -2131,12 +2128,7 @@ function vWH(){
     </div>
     <!-- Filter bar — scroll แนวนอนได้ ไม่ถูก clip -->
     <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px;">
-      <button onclick="fWHStage='ทั้งหมด';render(false)" style="
-        padding:8px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
-        border:2px solid ${allActive?'var(--green)':'var(--border2)'};
-        background:${allActive?'var(--green)':'#fff'};
-        color:${allActive?'#fff':'var(--text2)'};
-        transition:all .15s">ทั้งหมด (${list.length})</button>
+      <button class="filter-chip ${allActive?'active':''}" onclick="fWHStage='ทั้งหมด';render(false)">ทั้งหมด (${list.length})</button>
       ${filterBar}
     </div>
   </div>
