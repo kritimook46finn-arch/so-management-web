@@ -1049,14 +1049,14 @@ function fmtDateLines(raw){
                   Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
     const day=m[1];  // Mon
     const dd=m[3].padStart(2,'0');
-    const mm=months[m[2]]||m[2];
     const yyyy=m[4];
     const time=m[5];  // 00:00
-    return{day,dmy:`${dd}/${mm}/${yyyy}`,time};
+    return{day,dmy:`${dd} ${m[2]} ${yyyy}`,time};
   }
   // รูปแบบ dd/mm/yyyy
   const m2=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if(m2)return{day:'',dmy:`${m2[1].padStart(2,'0')}/${m2[2].padStart(2,'0')}/${m2[3]}`,time:''};
+  if(m2){const mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return{day:'',dmy:`${m2[1].padStart(2,'0')} ${mn[+m2[2]]||m2[2]} ${m2[3]}`,time:''};}
+
   // fallback
   return{day:'',dmy:raw.replace(/GMT.*/,'').trim(),time:''};
 }
