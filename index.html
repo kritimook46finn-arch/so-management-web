@@ -129,7 +129,7 @@ a:hover{text-decoration:underline}
 .order-cust{font-weight:600;font-size:13px;color:var(--text)}
 .order-cust-sub{font-size:11px;color:var(--text3);margin-top:1px}
 .order-amount{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.order-date{font-size:12px;color:var(--text2)}
+.order-date{font-size:12px;color:var(--text2);line-height:1.5;white-space:nowrap}
 
 /* PIPELINE */
 .pipeline{display:flex;align-items:center;gap:0;flex-wrap:nowrap}
@@ -1039,6 +1039,36 @@ function filterDeleted(orders){
   return orders.filter(o=>!stillDeleted.includes(+o.no));
 }
 
+// ── DATE FORMAT ─────────────────────────────────
+function fmtDateLines(raw){
+  if(!raw)return{day:'',dmy:'',time:''};
+  // รูปแบบ: "Mon Jun 15 2026 00:00:00 GMT+0700 (Indochina Time)"
+  const m=raw.match(/^(\w{3})\s+(\w{3})\s+(\d{1,2})\s+(\d{4})\s+(\d{2}:\d{2}):\d{2}/);
+  if(m){
+    const months={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+                  Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+    const day=m[1];  // Mon
+    const dd=m[3].padStart(2,'0');
+    const mm=months[m[2]]||m[2];
+    const yyyy=m[4];
+    const time=m[5];  // 00:00
+    return{day,dmy:`${dd}/${mm}/${yyyy}`,time};
+  }
+  // รูปแบบ dd/mm/yyyy
+  const m2=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m2)return{day:'',dmy:`${m2[1].padStart(2,'0')}/${m2[2].padStart(2,'0')}/${m2[3]}`,time:''};
+  // fallback
+  return{day:'',dmy:raw.replace(/GMT.*/,'').trim(),time:''};
+}
+function fmtDateCell(raw){
+  const{day,dmy,time}=fmtDateLines(raw);
+  return `<span class="order-date">`
+    +(day?`<span style="display:block;font-size:11px;color:var(--text3)">${day}</span>`:'')
+    +(dmy?`<span style="display:block;font-size:12px;font-weight:600;color:var(--text)">${dmy}</span>`:'')
+    +(time?`<span style="display:block;font-size:11px;color:var(--text3)">${time}</span>`:'')
+    +`</span>`;
+}
+
 // ── HELPERS ───────────────────────────────────
 // คำนวณ No. ถัดไปจาก ORDERS ปัจจุบัน (ไม่ใช้ static counter)
 // ป้องกัน gap เมื่อลบออเดอร์ที่เพิ่งสร้าง
@@ -1214,7 +1244,7 @@ function vDash(){
   </tr></thead>
   <tbody>${ORDERS.slice(0,15).map(o=>`<tr onclick="showOrder(${o.no})">
     <td><span class="order-no">${o.no}</span></td>
-    <td><span class="order-date">${o.date}</span></td>
+    <td>${fmtDateCell(o.date)}</td>
     <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
     <td>
       <div style="font-weight:600;font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cust.replace(/^[A-Z]\d+ /,'')}</div>
@@ -1306,7 +1336,7 @@ async function vOrders(){
     ?`<tr><td colspan="9"><div class="empty-state">${icon('list')}<div class="et">ไม่พบออเดอร์</div></div></td></tr>`
     :list.map(o=>`<tr onclick="showOrder(${o.no})" style="${pendingOrders.has(o.no)?'background:#FFFBEB;':''}">
       <td><span class="order-no">${o.no}</span></td>
-      <td><span class="order-date" style="font-size:11px">${o.date}</span></td>
+      <td>${fmtDateCell(o.date)}</td>
       <td><span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span></td>
       <td><div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px">${o.cust.replace(/^[A-Z]\d+ /,'')}</div><div style="font-size:10px;color:var(--text3)">${o.cust.match(/^[A-Z]\d+/)?.[0]||''}</div></td>
       <td style="white-space:nowrap">${pipe(o)}</td>
@@ -1334,7 +1364,7 @@ function showOrder(no){
       <span class="badge ${o.payStatus==='ชำระแล้ว'?'badge-paid':'badge-unpaid'}">${o.payStatus}</span>
       <span class="sale-badge sale-${o.sale.toLowerCase()}">${o.sale}</span>
     </div>
-    <div class="modal-head-sub">${o.date} · ${o.cust}</div>
+    <div class="modal-head-sub">${fmtDateLines(o.date).dmy} · ${o.cust}</div>
   </div>
   <button class="modal-close-btn" onclick="closeModal('m-order')">✕</button>`;
 
