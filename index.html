@@ -909,14 +909,13 @@ function pickCust(e,val){
   const inp=document.getElementById('cust-input');
   if(inp){inp.value=val;}
   closeCustDD();
-  // auto-fill shipTo ถ้ายังว่างอยู่
+  // ทุกครั้งที่เลือกบริษัท — update shipTo เสมอ
+  // ถ้ามีที่อยู่ในลิส → ใส่ที่อยู่
+  // ถ้าไม่มีในลิส → clear เป็นค่าว่าง
   const addr=lookupAddr(val);
-  if(addr && !draft.shipTo){
-    draft.shipTo=addr;
-    // อัปเดต textarea ทันทีถ้ามีอยู่ใน DOM
-    const ta=document.getElementById('ship-to-input');
-    if(ta){ta.value=addr;}
-  }
+  draft.shipTo=addr;
+  const ta=document.getElementById('ship-to-input');
+  if(ta){ta.value=addr;}
   render(false);
 }
 
@@ -960,15 +959,14 @@ function closeCustDD(){
 
 function onCustInput(val){
   draft.cust=val;
+  // เมื่อพิมพ์เอง (ไม่ได้เลือก dropdown) → clear shipTo เสมอ
+  draft.shipTo='';
+  const ta=document.getElementById('ship-to-input');
+  if(ta) ta.value='';
   const dd=document.getElementById('cust-dd');
   if(!dd)return;
-  if(val.length>0){
-    dd.innerHTML=custDropdownHTML(val);
-    dd.classList.add('open');
-  } else {
-    dd.innerHTML=custDropdownHTML('');
-    dd.classList.add('open');
-  }
+  dd.innerHTML=custDropdownHTML(val);
+  dd.classList.add('open');
 }
 
 // ── LOAD FROM GAS (realtime, no cache) ──────
