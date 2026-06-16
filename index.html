@@ -1764,7 +1764,11 @@ function setPrice(pid,origPrice,newPrice){
 // ── NEW ORDER ─────────────────────────────────
 function vNew(){
   loadCustomers(); // preload ล่วงหน้า
-  if(!draft)draft={sale:'',cust:'',pay:'',payStatus:'ยังไม่ชำระ',po:'',shipper:'',shipTo:'',shipDate:'',note:'',items:{}};
+  if(!draft){
+    const _t=new Date();
+    const _today=_t.getFullYear()+'-'+String(_t.getMonth()+1).padStart(2,'0')+'-'+String(_t.getDate()).padStart(2,'0');
+    draft={sale:'',cust:'',pay:'',payStatus:'ยังไม่ชำระ',po:'',shipper:'',shipTo:'',shipDate:_today,note:'',items:{}};
+  }
   // กรองสินค้าด้วย prodSq (แยกจาก topbar sq)
   let prods=PRODUCTS;
   if(prodSq.trim())prods=PRODUCTS.filter(p=>(p.id+' '+p.name).toLowerCase().includes(prodSq.toLowerCase()));
