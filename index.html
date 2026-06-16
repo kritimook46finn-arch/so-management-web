@@ -1543,7 +1543,7 @@ async function vOrders(){
     </tr>`).join('')}</tbody></table></div>
 
   <!-- Mobile: card layout -->
-  <div class="order-cards mobile-only" id="order-cards-mobile"></div>`;
+  <div class="order-cards mobile-only" id="order-cards-mobile" style="display:none"></div>`;
   _renderOrderCards(list);
 }
 
@@ -2473,6 +2473,10 @@ function _renderWHCards(grp, activeCols){
 function _renderOrderCards(list){
   const el=document.getElementById('order-cards-mobile');
   if(!el)return;
+  // แสดงเฉพาะ mobile — ซ่อนถ้า desktop
+  const isMobile=window.innerWidth<=768;
+  el.style.display=isMobile?'flex':'none';
+  if(!isMobile)return;
   if(!list.length){el.innerHTML='<div class="empty-state"><div class="et">ไม่พบออเดอร์</div></div>';return;}
   el.innerHTML=list.map(o=>{
     const nm=o.cust.replace(/^[A-Z]\d+ /,'');
