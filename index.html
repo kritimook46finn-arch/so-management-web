@@ -540,6 +540,33 @@ a:hover{text-decoration:underline}
 
 <div class="toast-area" id="toasts"></div>
 
+<!-- SHIP DATE MODAL -->
+<div class="modal-overlay" id="m-shipdate" onclick="if(event.target===this)closeModal('m-shipdate')">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title">🚚 จัดส่งแล้ว</div>
+        <div class="modal-head-sub" id="shipdate-subtitle">ระบุวันที่ส่งสินค้าจริง</div>
+      </div>
+      <button class="modal-close-btn" onclick="closeModal('m-shipdate')">✕</button>
+    </div>
+    <div class="modal-scroll" style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">วันที่ส่งสินค้าจริง <span class="req">*</span></label>
+        <input type="date" id="ship-actual-date" style="font-size:15px;font-weight:600">
+      </div>
+      <div style="font-size:12px;color:var(--text3)">ข้อมูลจะบันทึกลงใน Google Sheets คอลัม R</div>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn btn-ghost" onclick="closeModal('m-shipdate')" style="flex:1;justify-content:center">ยกเลิก</button>
+      <button class="btn btn-success" onclick="confirmShipDate()" style="flex:1;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg>
+        ยืนยัน
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- APPROVAL MODAL -->
 <div class="modal-overlay" id="m-approval" onclick="if(event.target===this)closeApproval()">
   <div class="modal-box" style="max-width:480px">
@@ -1575,20 +1602,19 @@ function showOrder(no){
       <svg viewBox="0 0 24 24" fill="none" stroke="${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
       <span style="font-size:12px;font-weight:700;color:${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'};text-transform:uppercase;letter-spacing:.4px">สถานะคลัง${o.wStage?' — '+o.wStage:''}</span>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px" id="ws-btns-${o.no}">
-      ${['เปิดบิลแล้ว','เตรียมของแล้ว','จัดส่งแล้ว'].map(s=>{
-        const active=o.wStage===s;
-        const col=s==='จัดส่งแล้ว'?'var(--green)':s==='เตรียมของแล้ว'?'var(--amber)':'var(--blue)';
-        return `<button
-          data-no="${o.no}"
-          data-stage="${s}"
-          onclick="setWSBtn(this)"
-          style="padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;
-            border:2px solid ${active?col:'var(--border2)'};
-            background:${active?col:'#fff'};
-            color:${active?'#fff':'var(--text3)'}"
-        >${s}</button>`;
-      }).join('')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="ws-btns-${o.no}">
+      ${[
+        {stage:'เปิดบิล/เตรียมของแล้ว', col:'var(--blue)',  active:['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'].includes(o.wStage)},
+        {stage:'จัดส่งแล้ว',            col:'var(--green)', active:o.wStage==='จัดส่งแล้ว'}
+      ].map(b=>`<button
+        data-no="${o.no}"
+        data-stage="${b.stage}"
+        onclick="setWSBtn(this)"
+        style="padding:10px 4px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;
+          border:2px solid ${b.active?b.col:'var(--border2)'};
+          background:${b.active?b.col:'#fff'};
+          color:${b.active?'#fff':'var(--text3)'}"
+      >${b.stage}</button>`).join('')}
     </div>
     <div class="form-group" style="margin-bottom:8px">
       <label class="form-label" style="font-size:11px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.4px">
@@ -1640,10 +1666,18 @@ function saveSONo(no){
   sync('UPDATE_ORDER',o);renderShell();
 }
 function setWSBtn(btn){
-  // อ่านจาก data attribute — ป้องกันปัญหา encoding ภาษาไทยใน HTML attribute
   const no=+btn.dataset.no;
   const s=btn.dataset.stage;
-  setWS(no,s);
+  if(s==='จัดส่งแล้ว'){
+    const o=ORDERS.find(x=>x.no===no);
+    if(o&&o.wStage==='จัดส่งแล้ว'){
+      setWS(no,s); // toggle off
+    } else {
+      openShipDateModal(no); // เปิด popup ขอวันส่งจริง
+    }
+  } else {
+    setWS(no,s);
+  }
 }
 function setWS(no,s){
   const o=ORDERS.find(x=>x.no===no);if(!o)return;
@@ -1653,10 +1687,11 @@ function setWS(no,s){
   // อัปเดต button styles ทันทีโดยไม่ re-render modal ทั้งหมด
   const container=document.getElementById('ws-btns-'+no);
   if(container){
-    const cols={'เปิดบิลแล้ว':'var(--blue)','เตรียมของแล้ว':'var(--amber)','จัดส่งแล้ว':'var(--green)'};
+    const cols={'เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่งแล้ว':'var(--green)'};
+    const matchMap={'เปิดบิล/เตรียมของแล้ว':['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'],'จัดส่งแล้ว':['จัดส่งแล้ว']};
     container.querySelectorAll('button[data-stage]').forEach(btn=>{
       const st=btn.dataset.stage;
-      const isActive=o.wStage===st;
+      const isActive=(matchMap[st]||[st]).includes(o.wStage);
       const col=cols[st]||'var(--blue)';
       btn.style.border='2px solid '+(isActive?col:'var(--border2)');
       btn.style.background=isActive?col:'#fff';
@@ -2519,6 +2554,53 @@ function renderApprovalFiles(){
     const name_esc=f.name.replace(/'/g,"\'");
     return `<div class="approval-file">${icon} <span title="${f.name}">${f.name.length>24?f.name.substring(0,22)+'…':f.name}</span> <span style="color:var(--text3)">(${size})</span><button onclick="removeApprovalFile('${name_esc}')" title="ลบ">✕</button></div>`;
   }).join('');
+}
+
+// ── SHIP DATE MODAL ─────────────────────────────
+let _shipNo=null;
+
+function openShipDateModal(no){
+  _shipNo=no;
+  const o=ORDERS.find(x=>x.no===no);
+  const sub=document.getElementById('shipdate-subtitle');
+  if(sub&&o) sub.textContent='No.'+no+' — '+o.cust.replace(/^[A-Z]\d+ /,'');
+  // default วันนี้
+  const t=new Date();
+  const inp=document.getElementById('ship-actual-date');
+  if(inp) inp.value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  openModal('m-shipdate');
+}
+
+async function confirmShipDate(){
+  const inp=document.getElementById('ship-actual-date');
+  if(!inp||!inp.value){toast('กรุณาเลือกวันที่','err');return;}
+  const no=_shipNo;
+  const o=ORDERS.find(x=>x.no===no);
+  if(!o)return;
+  // แปลง yyyy-mm-dd → dd/mm/yyyy
+  const [y,m,d]=inp.value.split('-');
+  const dateStr=d+'/'+m+'/'+y;
+  o.wStage='จัดส่งแล้ว';
+  o.shipActual=dateStr;
+  closeModal('m-shipdate');
+  // อัปเดต WH buttons ใน modal order
+  const container=document.getElementById('ws-btns-'+no);
+  if(container){
+    const cols={'เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่งแล้ว':'var(--green)'};
+    const matchMap={'เปิดบิล/เตรียมของแล้ว':['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'],'จัดส่งแล้ว':['จัดส่งแล้ว']};
+    container.querySelectorAll('button[data-stage]').forEach(btn=>{
+      const st=btn.dataset.stage;
+      const act=(matchMap[st]||[st]).includes(o.wStage);
+      const col=cols[st]||'var(--green)';
+      btn.style.border='2px solid '+(act?col:'var(--border2)');
+      btn.style.background=act?col:'#fff';
+      btn.style.color=act?'#fff':'var(--text3)';
+    });
+  }
+  toast('🚚 จัดส่งแล้ว — '+dateStr,'ok');
+  // sync ไป GAS — บันทึก wStage + shipActual (col R)
+  sync('UPDATE_ORDER',{no, wStage:'จัดส่งแล้ว', shipActual:dateStr});
+  render(false);
 }
 
 // ── SYNC ──────────────────────────────────────
