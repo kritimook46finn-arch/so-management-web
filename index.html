@@ -343,6 +343,12 @@ a:hover{text-decoration:underline}
 .cust-opt:hover,.cust-opt.focused{background:var(--green-soft)}
 .cust-opt-code{font-family:var(--mono);font-size:11px;color:var(--text3);display:block;margin-top:1px}
 .cust-opt mark{background:#DCFCE7;color:var(--green-dark);border-radius:2px;padding:0 1px;font-weight:700}
+/* approval modal */
+.approval-drop{border:2px dashed var(--border2);border-radius:var(--r-sm);padding:24px;text-align:center;cursor:pointer;transition:all .15s;color:var(--text3);font-size:13px}
+.approval-drop:hover,.approval-drop.dragover{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.approval-files{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.approval-file{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text2)}
+.approval-file button{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;line-height:1;padding:0 2px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── MOBILE BOTTOM NAV ── */
@@ -533,6 +539,46 @@ a:hover{text-decoration:underline}
 </div>
 
 <div class="toast-area" id="toasts"></div>
+
+<!-- APPROVAL MODAL -->
+<div class="modal-overlay" id="m-approval" onclick="if(event.target===this)closeApproval()">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title">แนบหลักฐานยืนยันอนุมัต</div>
+        <div class="modal-head-sub">สำหรับออเดอร์ที่ยังไม่ได้ชำระเงิน</div>
+      </div>
+      <button class="modal-close-btn" onclick="closeApproval()">✕</button>
+    </div>
+    <div class="modal-scroll" style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+      <!-- Note -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">Note / หมายเหตุ</label>
+        <textarea id="approval-note" rows="3" placeholder="ระบุเหตุผลหรือรายละเอียดประกอบ..." style="font-size:13px;min-height:80px"></textarea>
+      </div>
+      <!-- File attach -->
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">แนบไฟล์ / รูปภาพ</label>
+        <div class="approval-drop" id="approval-drop"
+          onclick="document.getElementById('approval-file-input').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="onApprovalDrop(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;margin:0 auto 6px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          คลิกหรือลากไฟล์มาวางที่นี่<br>
+          <span style="font-size:11px;opacity:.7">รองรับ รูปภาพ, PDF, Word (ขนาดไม่เกิน 10MB/ไฟล์)</span>
+        </div>
+        <input type="file" id="approval-file-input" multiple accept="image/*,.pdf,.doc,.docx"
+          style="display:none" onchange="onApprovalFileChange(this)">
+        <div class="approval-files" id="approval-files-list"></div>
+      </div>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn btn-ghost" onclick="closeApproval()" style="flex:1;justify-content:center">ข้าม</button>
+      <button class="btn btn-primary" onclick="confirmApproval()" style="flex:1;justify-content:center">ยืนยัน</button>
+    </div>
+  </div>
+</div>
 
 <!-- MOBILE BOTTOM NAV -->
 <nav class="mobile-nav" id="mobile-nav"></nav>
@@ -1672,7 +1718,12 @@ function vNew(){
           </div>
           <div class="form-group">
             <label class="form-label">การชำระเงิน <span class="req">*</span></label>
-            <div class="seg">${['Cash','Cheque','Credit'].map(s=>`<button class="seg-btn ${draft.pay===s?'on':''}" onclick="draft.pay='${s}';render(false)">${s}</button>`).join('')}</div>
+            <div class="seg">${[
+              {v:'เงินสด ชำระแล้ว',l:'เงินสด ชำระแล้ว'},
+              {v:'เงินสด ยังไม่ชำระ',l:'เงินสด ยังไม่ชำระ'},
+              {v:'เครดิต',l:'เครดิต'}
+            ].map(opt=>`<button class="seg-btn ${draft.pay===opt.v?'on':''}"
+              onclick="onPayClick('${opt.v}')">${opt.l}</button>`).join('')}</div>
           </div>
           <div class="form-group span2">
             <label class="form-label">ชื่อบริษัทลูกค้า <span class="req">*</span></label>
@@ -2360,6 +2411,86 @@ function _renderOrderCards(list){
       // แถว 5: ยอดเงิน
       +'<div style="text-align:right;font-weight:800;font-size:15px;color:var(--green)">฿'+fmt(tot(o))+'</div>'
       +'</div>';
+  }).join('');
+}
+
+// ── APPROVAL MODAL ──────────────────────────────
+let approvalFiles=[]; // เก็บ File objects
+
+function onPayClick(val){
+  draft.pay=val;
+  if(val==='เงินสด ยังไม่ชำระ'){
+    openApproval();
+  } else {
+    render(false);
+  }
+}
+
+function openApproval(){
+  // reset state
+  approvalFiles=[];
+  document.getElementById('approval-note').value='';
+  document.getElementById('approval-files-list').innerHTML='';
+  openModal('m-approval');
+}
+
+function closeApproval(){
+  closeModal('m-approval');
+  render(false);
+}
+
+function confirmApproval(){
+  const note=document.getElementById('approval-note').value.trim();
+  // เพิ่ม note เข้า draft.note (ต่อท้าย)
+  if(note){
+    draft.note=(draft.note?draft.note+'\n':'')+'[อนุมัติเครดิต] '+note;
+  }
+  // เก็บชื่อไฟล์ไว้ใน draft
+  if(approvalFiles.length>0){
+    const fnames=approvalFiles.map(f=>f.name).join(', ');
+    draft.note=(draft.note?draft.note+'\n':'')+'[ไฟล์แนบ] '+fnames;
+  }
+  closeModal('m-approval');
+  render(false);
+  toast('✓ บันทึกหลักฐานแล้ว','ok');
+}
+
+function onApprovalFileChange(input){
+  const files=Array.from(input.files);
+  files.forEach(f=>{
+    if(!approvalFiles.find(x=>x.name===f.name)) approvalFiles.push(f);
+  });
+  renderApprovalFiles();
+  input.value=''; // reset input
+}
+
+function onApprovalDrop(e){
+  e.preventDefault();
+  document.getElementById('approval-drop').classList.remove('dragover');
+  const files=Array.from(e.dataTransfer.files);
+  files.forEach(f=>{
+    if(!approvalFiles.find(x=>x.name===f.name)) approvalFiles.push(f);
+  });
+  renderApprovalFiles();
+}
+
+function removeApprovalFile(name){
+  approvalFiles=approvalFiles.filter(f=>f.name!==name);
+  renderApprovalFiles();
+}
+
+function renderApprovalFiles(){
+  const el=document.getElementById('approval-files-list');
+  if(!el)return;
+  if(!approvalFiles.length){el.innerHTML='';return;}
+  el.innerHTML=approvalFiles.map(f=>{
+    const icon=f.type.startsWith('image/')
+      ?'🖼️':f.name.endsWith('.pdf')?'📄':'📎';
+    const size=f.size>1024*1024
+      ?(f.size/1024/1024).toFixed(1)+'MB'
+      :(f.size/1024).toFixed(0)+'KB';
+    const name_esc=f.name.replace(/'/g,"\'");
+    return `<div class="approval-file">${icon} <span title="${f.name}">${f.name.length>24?f.name.substring(0,22)+'…':f.name}</span> <span style="color:var(--text3)">(${size})</span><button onclick="removeApprovalFile('${name_esc}')" title="ลบ">✕</button></div>`;
   }).join('');
 }
 
