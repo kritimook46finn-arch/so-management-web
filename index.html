@@ -2351,23 +2351,23 @@ function _renderSOCards(pending, opened){
 function vWH(){
   let list=ORDERS.filter(o=>o.soOpened&&o.no>=350);
   if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
-  const cols=[['เปิดบิล','var(--blue)'],['เตรียมของ','var(--amber)'],['จัดส่ง','var(--green)']];
-  const stageMap={'เปิดบิล':'เปิดบิลแล้ว','เตรียมของ':'เตรียมของแล้ว','จัดส่ง':'จัดส่งแล้ว'};
-  const grp={};cols.forEach(([s])=>grp[s]=[]);
+  // 2 stage: เปิดบิล/เตรียมของแล้ว และ จัดส่ง
+  const cols=[['เปิดบิล/เตรียมของแล้ว','var(--blue)'],['จัดส่ง','var(--green)']];
+  const grp={'เปิดบิล/เตรียมของแล้ว':[],'จัดส่ง':[]};
   list.forEach(o=>{
-    const stage=o.wStage==='เปิดบิลแล้ว'?'เปิดบิล':o.wStage==='เตรียมของแล้ว'?'เตรียมของ':o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล';
+    const stage=o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล/เตรียมของแล้ว';
     grp[stage].push(o);
   });
 
-  // filter ตาม fWHStage
+  // filter ตาม fWHStage — reset ถ้าค่าเก่าไม่ตรง
+  if(fWHStage==='เปิดบิล'||fWHStage==='เตรียมของ') fWHStage='เปิดบิล/เตรียมของแล้ว';
   const activeCols = fWHStage==='ทั้งหมด' ? cols : cols.filter(([s])=>s===fWHStage);
 
   // filter bar HTML
   const filterBar=cols.map(([s,col])=>{
     const cnt=grp[s].length;
     const active=fWHStage===s;
-    const em=s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚';
-    // ใช้ filter-chip เหมือน SO filter — active ใช้สีตาม stage
+    const em=s==='จัดส่ง'?'🚚':'📋';
     const activeCss=active?`background:${col};border-color:${col};color:#fff`:'';
     return `<button class="filter-chip ${active?'active':''}" onclick="fWHStage='${s}';render(false)" style="${activeCss}">${em} ${s} (${cnt})</button>`;
   }).join('');
@@ -2393,7 +2393,7 @@ function vWH(){
   ${activeCols.map(([s,col])=>`
   <div class="kanban-col">
     <div class="kanban-head" style="border-top:3px solid ${col}">
-      <span style="color:${col}">${s==='เปิดบิล'?'📋':s==='เตรียมของ'?'📦':'🚚'} ${s}</span>
+      <span style="color:${col}">${s==='จัดส่ง'?'🚚':'📋'} ${s}</span>
       <span class="kanban-head-badge" style="color:${col}">${grp[s].length}</span>
     </div>
     <div class="kanban-body">
@@ -2432,7 +2432,7 @@ function vWH(){
 function _renderWHCards(grp, activeCols){
   const el=document.getElementById('wh-mobile-list');
   if(!el)return;
-  const colColors={'เปิดบิล':'var(--blue)','เตรียมของ':'var(--amber)','จัดส่ง':'var(--green)'};
+  const colColors={'เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่ง':'var(--green)'};
   const stageFullName={'เปิดบิล':'เปิดบิลแล้ว','เตรียมของ':'เตรียมของแล้ว','จัดส่ง':'จัดส่งแล้ว'};
   let html='';
   activeCols.forEach(function([s,col]){
