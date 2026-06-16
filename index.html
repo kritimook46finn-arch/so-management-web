@@ -600,10 +600,10 @@ a:hover{text-decoration:underline}
 </div>
 
 <script>
-const GAS_URL='';
+const GAS_URL='https://script.google.com/macros/s/AKfycbxhkvZ0-CltBFkaAbQi3NZvYBaeVJ25VsKsoqtl9ockGHtgl5f0jjxYcSGPf7UNvreWgw/exec';
 
 // ── RECEIPTS CSV URL ──────────────────────────
-const CSV_RECEIPTS = '';
+const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWGAlva4dmZxTU0rWGfw9v8E585dI6dv7bd6tkLPLdvnFr5UCLLO6lby-g-Cj95dVFvj9eSidjZjU4/pub?gid=0&single=true&output=csv';
 
 // ── CSV PARSER ────────────────────────────────
 // receipts columns:
@@ -668,6 +668,7 @@ function parseReceiptsCSV(text){
       shipper:(r[14]||'').trim(),
       shipTo:(r[15]||'').trim(),
       shipDate:(r[16]||'').trim(),
+      shipActual:(r[17]||'').trim(),
       note,
       soOpened,
       soNo,
@@ -1229,11 +1230,37 @@ function icon(n,sz){
 function pipe(o){
   const s=plabel(o);
   const sep='<span class="pipe-sep">›</span>';
-  const step=(lbl,ico,cls)=>`<span class="pipe-step ${cls}">${icon(ico)}${lbl}</span>`;
-  const s1=step('เซลล์','list',s!=='sale'?'pipe-done':'pipe-active');
-  const s2=step('SO','doc',s==='so'?'pipe-active':s==='wh'||s==='done'?'pipe-done':'pipe-wait');
-  const s3=step('คลัง','warehouse',s==='wh'?'pipe-active':s==='done'?'pipe-done':'pipe-wait');
-  const s4=step('จัดส่ง','truck',s==='done'?'pipe-done':'pipe-wait');
+  const step=(lbl,ico,cls,above)=>{
+    const aboveHtml=above
+      ?`<span style="display:block;font-size:9px;font-weight:600;opacity:.75;margin-bottom:1px;white-space:nowrap">${above}</span>`
+      :'';
+    return`<span class="pipe-step ${cls}" style="flex-direction:column;align-items:flex-start;gap:0;padding-top:${above?'3px':''}">
+      ${aboveHtml}
+      <span style="display:flex;align-items:center;gap:3px">${icon(ico)}${lbl}</span>
+    </span>`;
+  };
+  // format วันที่สั้น: "15 Jun"
+  const fmtShort=d=>{
+    if(!d)return'';
+    const m=d.match(/(\d{1,2})[\s\/](\w+)[\s\/](\d{4})/);
+    if(m){
+      const eng=String(m[2]);
+      return m[1].padStart(2,'0')+' '+eng;
+    }
+    // dd/mm/yyyy
+    const m2=d.match(/(\d{1,2})\/(\d{1,2})/);
+    if(m2){
+      const months=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return m2[1].padStart(2,'0')+' '+(months[+m2[2]]||m2[2]);
+    }
+    return d.replace(/\s\d{2}:\d{2}.*/,'').trim();
+  };
+  const shipLabel=o.shipDate?fmtShort(o.shipDate):'';
+  const actualLabel=o.shipActual?fmtShort(o.shipActual):'';
+  const s1=step('เซลล์','list',s!=='sale'?'pipe-done':'pipe-active',shipLabel);
+  const s2=step('SO','doc',s==='so'?'pipe-active':s==='wh'||s==='done'?'pipe-done':'pipe-wait','');
+  const s3=step('คลัง','warehouse',s==='wh'?'pipe-active':s==='done'?'pipe-done':'pipe-wait','');
+  const s4=step('จัดส่ง','truck',s==='done'?'pipe-done':'pipe-wait',actualLabel);
   return`<div class="pipeline">${s1}${sep}${s2}${sep}${s3}${sep}${s4}</div>`;
 }
 
