@@ -630,7 +630,7 @@ a:hover{text-decoration:underline}
 const GAS_URL='https://script.google.com/macros/s/AKfycby1LllIRqs_M54IC_GGdg5kSLGY0TaNdfxYGyHW1MnKTbeLCP6i2QUB2nKtOTnxYt654w/exec';
 
 // ── RECEIPTS CSV URL ──────────────────────────
-const CSV_RECEIPTS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWGAlva4dmZxTU0rWGfw9v8E585dI6dv7bd6tkLPLdvnFr5UCLLO6lby-g-Cj95dVFvj9eSidjZjU4/pub?gid=0&single=true&output=csv';
+const CSV_RECEIPTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vQWGAlva4dmZxTU0rWGfw9v8E585dI6dv7bd6tkLPLdvnFr5UCLLO6lby-g-Cj95dVFvj9eSidjZjU4/pub?gid=0&single=true&output=csv';
 
 // ── CSV PARSER ────────────────────────────────
 // receipts columns:
@@ -1216,6 +1216,24 @@ function fmtDateCell(raw){
     +`</span>`;
 }
 
+
+// แปลงวันที่ทุก format → "d/m/yyyy"
+function toShortDate(raw){
+  if(!raw||raw==='-')return raw||'-';
+  // "Fri Sep 19 2025 00:00:00 GMT+0700..."
+  const m1=raw.match(/\w{3}\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+  if(m1){
+    const mo={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+    return m1[2]+'/'+mo[m1[1]]+'/'+m1[3];
+  }
+  // "dd/mm/yyyy" หรือ "d/m/yyyy"
+  const m2=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m2) return +m2[1]+'/'+m2[2].replace(/^0/,'')+'/'+m2[3];
+  // "yyyy-mm-dd"
+  const m3=raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m3) return +m3[3]+'/'+m3[2].replace(/^0/,'')+'/'+m3[1];
+  return raw;
+}
 // ── HELPERS ───────────────────────────────────
 // คำนวณ No. ถัดไปจาก ORDERS ปัจจุบัน (ไม่ใช้ static counter)
 // ป้องกัน gap เมื่อลบออเดอร์ที่เพิ่งสร้าง
@@ -1282,8 +1300,8 @@ function pipe(o){
     }
     return d.replace(/\s\d{2}:\d{2}.*/,'').trim();
   };
-  const shipLabel=o.shipDate?fmtShort(o.shipDate):'';
-  const actualLabel=o.shipActual?fmtShort(o.shipActual):'';
+  const shipLabel=o.shipDate?toShortDate(o.shipDate):'';
+  const actualLabel=o.shipActual?toShortDate(o.shipActual):'';
   const s1=step('เซลล์','list',s!=='sale'?'pipe-done':'pipe-active',shipLabel);
   const s2=step('SO','doc',s==='so'?'pipe-active':s==='wh'||s==='done'?'pipe-done':'pipe-wait','');
   const s3=step('คลัง','warehouse',s==='wh'?'pipe-active':s==='done'?'pipe-done':'pipe-wait','');
@@ -1568,7 +1586,7 @@ function showOrder(no){
     <div class="field-grid2">
       <div class="field-block"><div class="field-lbl">การชำระเงิน</div><div class="field-val">${o.pay}</div></div>
       <div class="field-block"><div class="field-lbl">ขนส่ง</div><div class="field-val">${o.shipper||'-'}</div></div>
-      <div class="field-block"><div class="field-lbl">วันต้องการส่ง</div><div class="field-val">${o.shipDate||'-'}</div></div>
+      <div class="field-block"><div class="field-lbl">วันต้องการส่ง</div><div class="field-val">${toShortDate(o.shipDate)}</div></div>
       <div class="field-block"><div class="field-lbl">Link PO</div><div class="field-val">${o.po?`<a href="${o.po}" target="_blank">เปิดเอกสาร ↗</a>`:'ไม่มี'}</div></div>
       <div class="field-block" style="grid-column:1/-1"><div class="field-lbl">จัดส่งที่</div><div class="field-val">${o.shipTo||'-'}</div></div>
       ${o.note?`<div class="field-block" style="grid-column:1/-1"><div class="field-lbl">หมายเหตุ</div><div class="field-val note-text">${o.note}</div></div>`:''}
@@ -2579,7 +2597,7 @@ async function confirmShipDate(){
   if(!o)return;
   // แปลง yyyy-mm-dd → dd/mm/yyyy
   const [y,m,d]=inp.value.split('-');
-  const dateStr=d+'/'+m+'/'+y;
+  const dateStr=+d+'/'+ +m+'/'+y; // d/m/yyyy ไม่มี leading zero
   o.wStage='จัดส่งแล้ว';
   o.shipActual=dateStr;
   closeModal('m-shipdate');
