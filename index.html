@@ -694,8 +694,8 @@ function parseReceiptsCSV(text){
       payStatus,
       shipper:(r[14]||'').trim(),
       shipTo:(r[15]||'').trim(),
-      shipDate:(r[16]||'').trim(),
-      shipActual:(r[17]||'').trim(),
+      shipDate:toShortDate((r[16]||'').trim()),
+      shipActual:toShortDate((r[17]||'').trim()),
       note,
       soOpened,
       soNo,
@@ -1056,6 +1056,11 @@ async function loadOrdersGAS(){
     if(!json.data||json.data.length===0)throw new Error('0 rows from GAS');
     const maxNo=Math.max(...json.data.map(o=>o.no||0));
     console.log('[loadGAS] got '+json.data.length+' orders, max No='+maxNo);
+    // normalize วันที่ให้เป็น short format
+    json.data.forEach(o=>{
+      o.shipDate=toShortDate(o.shipDate||'');
+      o.shipActual=toShortDate(o.shipActual||'');
+    });
     ORDERS=filterDeleted(json.data);
     return true;
   }catch(e){
@@ -1219,7 +1224,7 @@ function fmtDateCell(raw){
 
 // แปลงวันที่ทุก format → "d/m/yyyy"
 function toShortDate(raw){
-  if(!raw||raw==='-')return raw||'-';
+  if(!raw||raw==='-'||raw==='')return raw||'';
   // "Fri Sep 19 2025 00:00:00 GMT+0700..."
   const m1=raw.match(/\w{3}\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
   if(m1){
@@ -1702,6 +1707,8 @@ function setWS(no,s){
   const wasActive=o.wStage===s;
   // toggle: กดซ้ำ = ยกเลิก
   o.wStage=wasActive?'':s;
+  // ถ้ายกเลิก "จัดส่งแล้ว" ให้ clear shipActual ด้วย
+  if(wasActive && s==='จัดส่งแล้ว') o.shipActual='';
   // อัปเดต button styles ทันทีโดยไม่ re-render modal ทั้งหมด
   const container=document.getElementById('ws-btns-'+no);
   if(container){
@@ -1727,7 +1734,15 @@ function setWS(no,s){
     if(view==='warehouse')render(false);
   }
   toast(wasActive?'↩ ยกเลิกสถานะ: '+s:'📦 อัปเดต: '+s,'ok');
-  sync('UPDATE_ORDER',o);
+  // ส่งเฉพาะ fields ที่เปลี่ยน ไม่ส่ง shipDate/shipActual ที่อาจเป็น format ยาว
+  sync('UPDATE_ORDER',{
+    no: o.no,
+    wStage: o.wStage,
+    shipActual: o.shipActual||'',
+    soNote: o.soNote||'',
+    whNote: o.whNote||'',
+    billDocNo: o.billDocNo||'',
+  });
 }
 function saveSONote(no,val){
   const o=ORDERS.find(x=>x.no===no);if(!o)return;
