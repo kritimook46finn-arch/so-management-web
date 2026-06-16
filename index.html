@@ -2391,7 +2391,8 @@ function _renderSOCards(pending, opened){
 
 // ── WAREHOUSE ─────────────────────────────────
 function vWH(){
-  let list=ORDERS.filter(o=>o.soOpened&&o.no>=350);
+  // แสดงทุก order ที่มี wStage (ไม่ว่าจะ soOpened หรือ No. เท่าไหร่)
+  let list=ORDERS.filter(o=>o.wStage);
   if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
   // 2 stage: เปิดบิล/เตรียมของแล้ว และ จัดส่ง
   const cols=[['เปิดบิล/เตรียมของแล้ว','var(--blue)'],['จัดส่ง','var(--green)']];
