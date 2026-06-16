@@ -1608,11 +1608,13 @@ function showOrder(no){
       <input type="checkbox" id="so-cb-${o.no}" ${o.soOpened?'checked':''} style="width:16px;height:16px;accent-color:var(--green);cursor:pointer" onchange="toggleSO(${o.no},this.checked)">
       เปิด SO แล้ว
     </label>
-    <div class="form-group" style="margin-bottom:6px">
+    <div class="form-group" style="margin-bottom:10px">
       <label class="form-label">เลข SO</label>
-      <input id="so-input-${o.no}" style="font-family:var(--mono);letter-spacing:.5px;font-size:14px" placeholder="SOIN26XXXXXX" value="${o.soNo||''}" onchange="updateSONo(${o.no},this.value)">
+      <div style="display:flex;gap:6px">
+        <input id="so-input-${o.no}" style="font-family:var(--mono);letter-spacing:.5px;font-size:14px;flex:1" placeholder="SOIN26XXXXXX" value="${o.soNo||''}" onchange="updateSONo(${o.no},this.value)">
+        <button class="btn btn-success btn-sm" onclick="saveSONo(${o.no})" style="white-space:nowrap;padding:6px 12px;flex-shrink:0">บันทึก</button>
+      </div>
     </div>
-    <button class="btn btn-success btn-sm" style="margin-bottom:10px;width:100%" onclick="saveSONo(${o.no})">💾 บันทึกเลข SO</button>
     <div class="form-group">
       <label class="form-label" style="color:var(--text3);font-weight:600">หมายเหตุ SO</label>
       <textarea id="so-note-${o.no}" rows="2" placeholder="บันทึกหมายเหตุเกี่ยวกับ SO…" style="min-height:56px;font-size:13px;resize:vertical" onchange="saveSONote(${o.no},this.value)">${o.soNote||''}</textarea>
