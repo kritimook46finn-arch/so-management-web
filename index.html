@@ -605,6 +605,33 @@ a:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- RECEIVER MODAL -->
+<div class="modal-overlay" id="m-receiver" onclick="if(event.target===this)closeModal('m-receiver')">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title">ข้อมูลผู้รับสินค้า</div>
+        <div class="modal-head-sub" id="receiver-subtitle">สำหรับการจัดส่ง</div>
+      </div>
+      <button class="modal-close-btn" onclick="closeModal('m-receiver')">✕</button>
+    </div>
+    <div class="modal-scroll" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">ชื่อผู้รับ</label>
+        <input id="receiver-name" placeholder="ชื่อ-นามสกุลผู้รับ" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">เบอร์ติดต่อผู้รับ</label>
+        <input id="receiver-phone" placeholder="0XX-XXX-XXXX" type="tel" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn btn-ghost" onclick="closeReceiverModal()" style="flex:1;justify-content:center">ข้าม</button>
+      <button class="btn btn-primary" onclick="confirmReceiver()" style="flex:1;justify-content:center">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
 <!-- PAYMENT PROOF MODAL -->
 <div class="modal-overlay" id="m-payment-proof" onclick="if(event.target===this)closePaymentProof()">
   <div class="modal-box" style="max-width:480px">
@@ -1871,7 +1898,7 @@ function vNew(){
   if(!draft){
     const _t=new Date();
     const _today=_t.getFullYear()+'-'+String(_t.getMonth()+1).padStart(2,'0')+'-'+String(_t.getDate()).padStart(2,'0');
-    draft={sale:'',cust:'',pay:'',payStatus:'ยังไม่ชำระ',po:'',shipper:'',shipTo:'',shipDate:_today,note:'',items:{}};
+    draft={sale:'',cust:'',pay:'',payStatus:'ยังไม่ชำระ',po:'',shipper:'',shipTo:'',shipDate:_today,note:'',items:{},receiverName:'',receiverPhone:''};
   }
   // กรองสินค้าด้วย prodSq (แยกจาก topbar sq)
   let prods=PRODUCTS;
@@ -1930,10 +1957,11 @@ function vNew(){
 
           <div class="form-group">
             <label class="form-label">ขนส่ง</label>
-            <select onchange="draft.shipper=this.value">
+            <select onchange="onShipperChange(this.value)">
               <option value="">— เลือก —</option>
-              ${['Lalamove','ลูกค้ามารับเอง','By Sale','ย้ายไปคลัง 4care'].map(s=>`<option ${draft.shipper===s?'selected':''}>${s}</option>`).join('')}
+              ${['Lalamove','Flash','ลูกค้ามารับเอง','By Sale','ย้ายไปคลัง 4care'].map(s=>`<option ${draft.shipper===s?'selected':''}>${s}</option>`).join('')}
             </select>
+            ${_receiverInfoHtml()}
           </div>
           <div class="form-group span2">
             <label class="form-label">วันที่ต้องการส่ง</label>
@@ -2671,6 +2699,48 @@ function _renderPrepFiles(){
     const ne=f.name.replace(/'/g,"\'");
     return `<div class="approval-file">${icon} <span>${f.name.length>24?f.name.substring(0,22)+'…':f.name}</span> <span style="color:var(--text3)">(${size})</span><button onclick="removePrepFile('${ne}')">✕</button></div>`;
   }).join('');
+}
+
+// ── RECEIVER MODAL ───────────────────────────────
+function _receiverInfoHtml(){
+  if((draft.shipper==='Lalamove'||draft.shipper==='Flash')&&(draft.receiverName||draft.receiverPhone)){
+    return '<div style="margin-top:6px;padding:8px 10px;background:var(--green-soft);border-radius:6px;font-size:12px">ผู้รับ: '+(draft.receiverName||'-')+(draft.receiverPhone?' · '+draft.receiverPhone:'')+' <button onclick="openReceiverModal()" style="background:none;border:none;cursor:pointer;color:var(--green);font-size:11px;text-decoration:underline">แก้ไข</button></div>';
+  }
+  return '';
+}
+
+function onShipperChange(val){
+  draft.shipper=val;
+  if(val==='Lalamove'||val==='Flash'){
+    openReceiverModal(val);
+  } else {
+    render(false);
+  }
+}
+
+function openReceiverModal(shipper){
+  var sub=document.getElementById('receiver-subtitle');
+  if(sub) sub.textContent='สำหรับการจัดส่งผ่าน '+(shipper||draft.shipper||'');
+  var nameInp=document.getElementById('receiver-name');
+  var phoneInp=document.getElementById('receiver-phone');
+  if(nameInp) nameInp.value=draft.receiverName||'';
+  if(phoneInp) phoneInp.value=draft.receiverPhone||'';
+  openModal('m-receiver');
+}
+
+function closeReceiverModal(){
+  closeModal('m-receiver');
+  render(false);
+}
+
+function confirmReceiver(){
+  var name=(document.getElementById('receiver-name').value||'').trim();
+  var phone=(document.getElementById('receiver-phone').value||'').trim();
+  draft.receiverName=name;
+  draft.receiverPhone=phone;
+  closeModal('m-receiver');
+  render(false);
+  if(name) toast('บันทึกข้อมูลผู้รับ: '+name+(phone?' / '+phone:''),'ok');
 }
 
 // ── PAYMENT PROOF MODAL ─────────────────────────
