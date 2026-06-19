@@ -605,6 +605,84 @@ a:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- TEMP DELIVERY MODAL -->
+<div class="modal-overlay" id="m-temp-delivery" onclick="if(event.target===this)closeModal('m-temp-delivery')">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-head">
+      <div><div class="modal-head-title">📄 ใบส่งสินค้าชั่วคราว</div><div class="modal-head-sub" id="tempdelivery-subtitle"></div></div>
+      <button class="modal-close-btn" onclick="closeModal('m-temp-delivery')">✕</button>
+    </div>
+    <div class="modal-scroll" style="padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px">
+      อยู่ระหว่างออกแบบ format
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-temp-delivery')" style="flex:1;justify-content:center">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIVER MODAL -->
+<div class="modal-overlay" id="m-receiver" onclick="if(event.target===this)closeModal('m-receiver')">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-head">
+      <div><div class="modal-head-title">📦 ข้อมูลผู้รับสินค้า</div><div class="modal-head-sub" id="receiver-subtitle">สำหรับการจัดส่ง</div></div>
+      <button class="modal-close-btn" onclick="closeModal('m-receiver')">✕</button>
+    </div>
+    <div class="modal-scroll" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">ชื่อผู้รับ <span class="req">*</span></label>
+        <input id="receiver-name" placeholder="ชื่อ-นามสกุลผู้รับ" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">เบอร์ติดต่อผู้รับ</label>
+        <input id="receiver-phone" placeholder="0XX-XXX-XXXX" type="tel" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn btn-ghost" onclick="closeReceiverModal()" style="flex:1;justify-content:center">ข้าม</button>
+      <button class="btn btn-primary" onclick="confirmReceiver()" style="flex:1;justify-content:center">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT PROOF MODAL -->
+<div class="modal-overlay" id="m-payment-proof" onclick="if(event.target===this)closeModal('m-payment-proof')">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title">แนบหลักฐานการชำระเงิน</div>
+        <div class="modal-head-sub">สำหรับออเดอร์ที่ชำระเงินแล้ว</div>
+      </div>
+      <button class="modal-close-btn" onclick="closeModal('m-payment-proof')">✕</button>
+    </div>
+    <div class="modal-scroll" style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">Note / หมายเหตุ</label>
+        <textarea id="payment-proof-note" rows="3" placeholder="ระบุรายละเอียดการชำระเงิน..." style="font-size:13px;min-height:80px"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="font-weight:700">แนบไฟล์ / รูปภาพ</label>
+        <div class="approval-drop" id="payment-proof-drop"
+          onclick="document.getElementById('payment-proof-file-input').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="onPaymentProofDrop(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;margin:0 auto 6px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          คลิกหรือลากไฟล์มาวางที่นี่<br>
+          <span style="font-size:11px;opacity:.7">รองรับ รูปภาพ, PDF, Word (ขนาดไม่เกิน 10MB/ไฟล์)</span>
+        </div>
+        <input type="file" id="payment-proof-file-input" multiple accept="image/*,.pdf,.doc,.docx"
+          style="display:none" onchange="onPaymentProofFileChange(this)">
+        <div class="approval-files" id="payment-proof-files-list"></div>
+      </div>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn btn-ghost" onclick="closePaymentProof()" style="flex:1;justify-content:center">ข้าม</button>
+      <button class="btn btn-primary" onclick="confirmPaymentProof()" style="flex:1;justify-content:center">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
 <!-- APPROVAL MODAL -->
 <div class="modal-overlay" id="m-approval" onclick="if(event.target===this)closeApproval()">
   <div class="modal-box" style="max-width:480px">
@@ -1411,6 +1489,7 @@ function renderShell(){
     {k:'so-manage',l:'จัดการ SO',i:'doc',badge:ordersLoaded?(pending||''):'…'},
     {k:'warehouse',l:'สถานะคลัง',i:'warehouse'},
     {k:'products',l:'รายการสินค้า',i:'box'},
+    {k:'accounting',l:'บัญชี',i:'doc'},
   ];
   _renderMobileNav(items, pending);
   document.getElementById('sidebar').innerHTML=`
@@ -1665,8 +1744,9 @@ function showOrder(no){
       <svg viewBox="0 0 24 24" fill="none" stroke="${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
       <span style="font-size:12px;font-weight:700;color:${o.wStage==='จัดส่งแล้ว'?'var(--green)':o.wStage?'var(--amber)':'var(--text3)'};text-transform:uppercase;letter-spacing:.4px">สถานะคลัง${o.wStage?' — '+o.wStage:''}</span>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="ws-btns-${o.no}">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px" id="ws-btns-${o.no}">
       ${[
+        {stage:'ใบส่งสินค้าชั่วคราว',    col:'var(--amber)', active:o.wStage==='ใบส่งสินค้าชั่วคราว'},
         {stage:'เปิดบิล/เตรียมของแล้ว', col:'var(--blue)',  active:['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'].includes(o.wStage)},
         {stage:'จัดส่งแล้ว',            col:'var(--green)', active:o.wStage==='จัดส่งแล้ว'}
       ].map(b=>`<button
@@ -1738,6 +1818,16 @@ function setWSBtn(btn){
     } else {
       openShipDateModal(no);
     }
+  } else if(s==='ใบส่งสินค้าชั่วคราว'){
+    const o=ORDERS.find(x=>x.no===no);
+    if(o&&o.wStage==='ใบส่งสินค้าชั่วคราว'){
+      setWS(no,s);
+    } else {
+      const sub=document.getElementById('tempdelivery-subtitle');
+      if(sub&&o) sub.textContent='No.'+no+' — '+o.cust.replace(/^[A-Z]\d+ /,'');
+      if(o) setWS(no,s);
+      openModal('m-temp-delivery');
+    }
   } else if(s==='เปิดบิล/เตรียมของแล้ว'){
     const o=ORDERS.find(x=>x.no===no);
     const already=['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'];
@@ -1760,8 +1850,8 @@ function setWS(no,s){
   // อัปเดต button styles ทันทีโดยไม่ re-render modal ทั้งหมด
   const container=document.getElementById('ws-btns-'+no);
   if(container){
-    const cols={'เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่งแล้ว':'var(--green)'};
-    const matchMap={'เปิดบิล/เตรียมของแล้ว':['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'],'จัดส่งแล้ว':['จัดส่งแล้ว']};
+    const cols={'ใบส่งสินค้าชั่วคราว':'var(--amber)','เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่งแล้ว':'var(--green)'};
+    const matchMap={'ใบส่งสินค้าชั่วคราว':['ใบส่งสินค้าชั่วคราว'],'เปิดบิล/เตรียมของแล้ว':['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'],'จัดส่งแล้ว':['จัดส่งแล้ว']};
     container.querySelectorAll('button[data-stage]').forEach(btn=>{
       const st=btn.dataset.stage;
       const isActive=(matchMap[st]||[st]).includes(o.wStage);
@@ -2395,26 +2485,26 @@ function vWH(){
   let list=ORDERS.filter(o=>o.wStage);
   if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
   // 2 stage: เปิดบิล/เตรียมของแล้ว และ จัดส่ง
-  const cols=[['เปิดบิล/เตรียมของแล้ว','var(--blue)'],['จัดส่ง','var(--green)']];
-  const grp={'เปิดบิล/เตรียมของแล้ว':[],'จัดส่ง':[]};
+  const cols=[['ใบส่งสินค้าชั่วคราว','var(--amber)'],['เปิดบิล/เตรียมของแล้ว','var(--blue)'],['จัดส่ง','var(--green)']];
+  const grp={'ใบส่งสินค้าชั่วคราว':[],'เปิดบิล/เตรียมของแล้ว':[],'จัดส่ง':[]};
   list.forEach(o=>{
-    const stage=o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล/เตรียมของแล้ว';
+    const stage=o.wStage==='จัดส่งแล้ว'?'จัดส่ง':o.wStage==='ใบส่งสินค้าชั่วคราว'?'ใบส่งสินค้าชั่วคราว':'เปิดบิล/เตรียมของแล้ว';
     grp[stage].push(o);
   });
 
   // filter ตาม fWHStage — reset ถ้าค่าเก่าไม่ตรง
   if(fWHStage==='เปิดบิล'||fWHStage==='เตรียมของ') fWHStage='เปิดบิล/เตรียมของแล้ว';
-  const activeCols = fWHStage==='ทั้งหมด' ? cols : cols.filter(([s])=>s===fWHStage);
+  if(fWHStage==='ทั้งหมด') fWHStage='เปิดบิล/เตรียมของแล้ว';
+  const activeCols = cols.filter(([s])=>s===fWHStage);
 
-  // filter bar HTML
+  // filter bar — ไม่มีปุ่ม "ทั้งหมด"
   const filterBar=cols.map(([s,col])=>{
     const cnt=grp[s].length;
     const active=fWHStage===s;
-    const em=s==='จัดส่ง'?'🚚':'📋';
+    const em=s==='จัดส่ง'?'🚚':s==='ใบส่งสินค้าชั่วคราว'?'📄':'📋';
     const activeCss=active?`background:${col};border-color:${col};color:#fff`:'';
     return `<button class="filter-chip ${active?'active':''}" onclick="fWHStage='${s}';render(false)" style="${activeCss}">${em} ${s} (${cnt})</button>`;
   }).join('');
-  const allActive=fWHStage==='ทั้งหมด';
 
   document.getElementById('content').innerHTML=`
   <div class="page-header" style="flex-direction:column;align-items:stretch;gap:10px;margin-bottom:14px">
@@ -2632,6 +2722,75 @@ function _renderPrepFiles(){
   }).join('');
 }
 
+// ── RECEIVER MODAL ───────────────────────────────
+function onShipperChange(val){
+  draft.shipper=val;
+  if(val==='Lalamove'||val==='Flash'){
+    document.getElementById('receiver-subtitle').textContent='สำหรับการจัดส่งผ่าน '+val;
+    document.getElementById('receiver-name').value=draft.receiverName||'';
+    document.getElementById('receiver-phone').value=draft.receiverPhone||'';
+    openModal('m-receiver');
+  } else {
+    render(false);
+  }
+}
+function closeReceiverModal(){
+  closeModal('m-receiver');
+  render(false);
+}
+function confirmReceiver(){
+  draft.receiverName=document.getElementById('receiver-name').value.trim();
+  draft.receiverPhone=document.getElementById('receiver-phone').value.trim();
+  closeModal('m-receiver');
+  render(false);
+  if(draft.receiverName) toast('✓ บันทึกข้อมูลผู้รับ: '+draft.receiverName,'ok');
+}
+
+// ── PAYMENT PROOF MODAL ─────────────────────────
+let paymentProofFiles=[];
+
+function openPaymentProof(){
+  paymentProofFiles=[];
+  document.getElementById('payment-proof-note').value='';
+  document.getElementById('payment-proof-files-list').innerHTML='';
+  openModal('m-payment-proof');
+}
+function closePaymentProof(){
+  closeModal('m-payment-proof');
+  render(false);
+}
+function confirmPaymentProof(){
+  const note=document.getElementById('payment-proof-note').value.trim();
+  if(note) draft.note=(draft.note?draft.note+'\n':'')+note;
+  if(paymentProofFiles.length>0){
+    const fnames=paymentProofFiles.map(f=>f.name).join(', ');
+    draft.note=(draft.note?draft.note+'\n':'')+'[หลักฐานชำระ] '+fnames;
+  }
+  closeModal('m-payment-proof');
+  render(false);
+  toast('✓ บันทึกหลักฐานการชำระเงินแล้ว','ok');
+}
+function onPaymentProofFileChange(input){
+  Array.from(input.files).forEach(f=>{if(!paymentProofFiles.find(x=>x.name===f.name))paymentProofFiles.push(f);});
+  _renderPaymentProofFiles(); input.value='';
+}
+function onPaymentProofDrop(e){
+  e.preventDefault();
+  document.getElementById('payment-proof-drop').classList.remove('dragover');
+  Array.from(e.dataTransfer.files).forEach(f=>{if(!paymentProofFiles.find(x=>x.name===f.name))paymentProofFiles.push(f);});
+  _renderPaymentProofFiles();
+}
+function _renderPaymentProofFiles(){
+  const el=document.getElementById('payment-proof-files-list');
+  if(!el)return;
+  el.innerHTML=paymentProofFiles.map(f=>{
+    const icon=f.type.startsWith('image/')?'🖼️':f.name.endsWith('.pdf')?'📄':'📎';
+    const size=f.size>1024*1024?(f.size/1024/1024).toFixed(1)+'MB':(f.size/1024).toFixed(0)+'KB';
+    const ne=f.name.replace(/'/g,"\'");
+    return `<div class="approval-file">${icon} <span>${f.name.length>24?f.name.substring(0,22)+'…':f.name}</span> <span style="color:var(--text3)">(${size})</span><button onclick="paymentProofFiles=paymentProofFiles.filter(x=>x.name!=='${ne}');_renderPaymentProofFiles()">✕</button></div>`;
+  }).join('');
+}
+
 // ── APPROVAL MODAL ──────────────────────────────
 let approvalFiles=[]; // เก็บ File objects
 
@@ -2639,6 +2798,8 @@ function onPayClick(val){
   draft.pay=val;
   if(val==='เงินสด ยังไม่ชำระ'){
     openApproval();
+  } else if(val==='เงินสด ชำระแล้ว'){
+    openPaymentProof();
   } else {
     render(false);
   }
@@ -2742,8 +2903,8 @@ async function confirmShipDate(){
   // อัปเดต WH buttons ใน modal order
   const container=document.getElementById('ws-btns-'+no);
   if(container){
-    const cols={'เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่งแล้ว':'var(--green)'};
-    const matchMap={'เปิดบิล/เตรียมของแล้ว':['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'],'จัดส่งแล้ว':['จัดส่งแล้ว']};
+    const cols={'ใบส่งสินค้าชั่วคราว':'var(--amber)','เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่งแล้ว':'var(--green)'};
+    const matchMap={'ใบส่งสินค้าชั่วคราว':['ใบส่งสินค้าชั่วคราว'],'เปิดบิล/เตรียมของแล้ว':['เปิดบิลแล้ว','เตรียมของแล้ว','เปิดบิล/เตรียมของแล้ว'],'จัดส่งแล้ว':['จัดส่งแล้ว']};
     container.querySelectorAll('button[data-stage]').forEach(btn=>{
       const st=btn.dataset.stage;
       const act=(matchMap[st]||[st]).includes(o.wStage);
@@ -2757,6 +2918,17 @@ async function confirmShipDate(){
   // sync ไป GAS — บันทึก wStage + shipActual (col R)
   sync('UPDATE_ORDER',{no, wStage:'จัดส่งแล้ว', shipActual:dateStr});
   render(false);
+}
+
+function vAccounting(){
+  document.getElementById('content').innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">บัญชี</div><div class="page-sub">ระบบบัญชี</div></div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;flex-direction:column;gap:12px;color:var(--text3)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;opacity:.3"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+    <div style="font-size:14px">อยู่ระหว่างพัฒนา</div>
+  </div>`;
 }
 
 // ── SYNC ──────────────────────────────────────
