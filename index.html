@@ -3010,11 +3010,22 @@ function vAccounting(){
         <tr>
           <th style="
             background:var(--green);color:#fff;
-            font-size:11px;font-weight:700;
-            padding:8px 6px;text-align:center;
             border:1px solid var(--green-dark);
-            position:sticky;left:0;z-index:2;min-width:52px
-          ">เวลา<br>วัน</th>
+            position:sticky;left:0;z-index:2;
+            min-width:70px;width:70px;height:48px;
+            padding:0;overflow:hidden;
+          ">
+            <div style="position:relative;width:70px;height:48px">
+              <!-- เส้นทแยงมุม -->
+              <svg width="70" height="48" style="position:absolute;top:0;left:0">
+                <line x1="0" y1="0" x2="70" y2="48" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+              </svg>
+              <!-- เวลา — บนขวา -->
+              <span style="position:absolute;top:5px;right:7px;font-size:11px;font-weight:700;line-height:1">เวลา</span>
+              <!-- วัน — ล่างซ้าย -->
+              <span style="position:absolute;bottom:5px;left:7px;font-size:11px;font-weight:700;line-height:1">วัน</span>
+            </div>
+          </th>
           ${headCols}
         </tr>
       </thead>
