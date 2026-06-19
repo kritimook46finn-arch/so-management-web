@@ -1272,7 +1272,7 @@ const USERS={
 };
 const LOGIN_PASS='insorder2026';
 const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
-let role=null,fWHStage='ทั้งหมด',userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
+let role=null,fAccSale='ทั้งหมด',fWHStage='ทั้งหมด',userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
 let pendingOrders=new Set(); // No. ที่สร้างใหม่ยังรอ save ไป Sheet
 
 // ── DELETED NOs (localStorage) ────────────────
@@ -3000,12 +3000,12 @@ function vAccounting(){
 
   // หา order blocks ที่ผ่านเงื่อนไข:
   // ขนส่ง = Lalamove หรือ Flash และ pipeline ครบทุกสถานะ
-  const eligible=ORDERS.filter(o=>{
+  let eligible=ORDERS.filter(o=>{
     const shipOk=o.shipper==='Lalamove'||o.shipper==='Flash';
-    // pipeline ครบ = wStage==='จัดส่งแล้ว' (ไม่บังคับ soOpened)
     const pipeOk=o.wStage==='จัดส่งแล้ว';
     return shipOk&&pipeOk;
   });
+  if(fAccSale!=='ทั้งหมด') eligible=eligible.filter(o=>o.sale===fAccSale);
 
   const blockColors=['var(--blue)','var(--amber)','var(--green)'];
   const orderBlocks=eligible.map((o,i)=>{
@@ -3030,10 +3030,17 @@ function vAccounting(){
   }).join('');
 
   document.getElementById('content').innerHTML=`
-  <div class="page-header">
+  <div class="page-header" style="flex-wrap:wrap;gap:10px;align-items:center">
     <div>
       <div class="page-title">บัญชี</div>
       <div class="page-sub">ตารางเวลาจัดส่ง จันทร์–ศุกร์</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--text3)">SALE</span>
+      ${['ทั้งหมด','Golf','Pea','Oil'].map(s=>`<button
+        class="filter-chip ${fAccSale===s?'active':''}"
+        onclick="fAccSale='${s}';render(false)"
+      >${s}</button>`).join('')}
     </div>
   </div>
 
