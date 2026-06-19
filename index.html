@@ -2969,16 +2969,57 @@ async function confirmShipDate(){
 
 // ── SYNC ──────────────────────────────────────
 function vAccounting(){
+  const days=['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์'];
+  const slots=['08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00'];
+
+  // thead
+  const headCols=slots.map(s=>`<th style="
+    background:var(--green);color:#fff;
+    font-size:12px;font-weight:700;
+    padding:8px 6px;text-align:center;
+    white-space:nowrap;border:1px solid var(--green-dark)
+  ">${s}</th>`).join('');
+
+  // tbody
+  const rows=days.map(day=>`<tr>
+    <td style="
+      background:var(--green-soft);
+      font-size:12px;font-weight:700;color:var(--green-dark);
+      padding:8px 10px;text-align:center;vertical-align:top;
+      border:1px solid var(--border);white-space:nowrap;
+      position:sticky;left:0;z-index:1;min-width:52px
+    ">${day}</td>
+    ${slots.map(()=>`<td style="
+      border:1px solid var(--border);
+      min-width:110px;height:80px;
+      vertical-align:top;padding:6px;
+      background:#fff;transition:background .12s;
+    " onmouseover="this.style.background='var(--green-soft)'" onmouseout="this.style.background='#fff'"></td>`).join('')}
+  </tr>`).join('');
+
   document.getElementById('content').innerHTML=`
   <div class="page-header">
     <div>
       <div class="page-title">บัญชี</div>
-      <div class="page-sub">ระบบบัญชี</div>
+      <div class="page-sub">ตารางเวลา จันทร์–ศุกร์</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;flex-direction:column;gap:12px;color:var(--text3)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;opacity:.3"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
-    <div style="font-size:14px">อยู่ระหว่างพัฒนา</div>
+  <div style="overflow-x:auto;overflow-y:auto;border-radius:var(--r);box-shadow:0 1px 4px rgba(0,0,0,.08)">
+    <table style="border-collapse:collapse;min-width:900px;width:100%">
+      <thead>
+        <tr>
+          <th style="
+            background:var(--green);color:#fff;
+            font-size:11px;font-weight:700;
+            padding:8px 6px;text-align:center;
+            border:1px solid var(--green-dark);
+            position:sticky;left:0;z-index:2;min-width:52px
+          ">เวลา<br>วัน</th>
+          ${headCols}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
   </div>`;
 }
 
