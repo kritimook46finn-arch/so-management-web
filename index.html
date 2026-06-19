@@ -3002,7 +3002,8 @@ function vAccounting(){
   // ขนส่ง = Lalamove หรือ Flash และ pipeline ครบทุกสถานะ
   const eligible=ORDERS.filter(o=>{
     const shipOk=o.shipper==='Lalamove'||o.shipper==='Flash';
-    const pipeOk=o.soOpened&&o.wStage==='จัดส่งแล้ว';
+    // pipeline ครบ = wStage==='จัดส่งแล้ว' (ไม่บังคับ soOpened)
+    const pipeOk=o.wStage==='จัดส่งแล้ว';
     return shipOk&&pipeOk;
   });
 
