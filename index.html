@@ -2492,27 +2492,26 @@ function vWH(){
   // แสดงทุก order ที่มี wStage (ไม่ว่าจะ soOpened หรือ No. เท่าไหร่)
   let list=ORDERS.filter(o=>o.wStage);
   if(sq)list=list.filter(o=>(o.no+''+o.cust+(o.soNo||'')).toLowerCase().includes(sq));
-  // 2 stage: เปิดบิล/เตรียมของแล้ว และ จัดส่ง
-  const cols=[['เปิดบิล/เตรียมของแล้ว','var(--blue)'],['จัดส่ง','var(--green)']];
-  const grp={'เปิดบิล/เตรียมของแล้ว':[],'จัดส่ง':[]};
+  const cols=[['เปิดบิล/เตรียมของแล้ว','var(--blue)'],['จัดส่ง','var(--green)'],['ใบส่งสินค้าชั่วคราว','var(--amber)']];
+  const grp={'เปิดบิล/เตรียมของแล้ว':[],'จัดส่ง':[],'ใบส่งสินค้าชั่วคราว':[]};
   list.forEach(o=>{
-    const stage=o.wStage==='จัดส่งแล้ว'?'จัดส่ง':'เปิดบิล/เตรียมของแล้ว';
+    const stage=o.wStage==='จัดส่งแล้ว'?'จัดส่ง'
+      :o.wStage==='ใบส่งสินค้าชั่วคราว'?'ใบส่งสินค้าชั่วคราว'
+      :'เปิดบิล/เตรียมของแล้ว';
     grp[stage].push(o);
   });
 
   // filter ตาม fWHStage — reset ถ้าค่าเก่าไม่ตรง
-  if(fWHStage==='เปิดบิล'||fWHStage==='เตรียมของ') fWHStage='เปิดบิล/เตรียมของแล้ว';
-  const activeCols = fWHStage==='ทั้งหมด' ? cols : cols.filter(([s])=>s===fWHStage);
+  if(fWHStage==='เปิดบิล'||fWHStage==='เตรียมของ'||fWHStage==='ทั้งหมด') fWHStage='เปิดบิล/เตรียมของแล้ว';
+  const activeCols=cols.filter(([s])=>s===fWHStage);
 
-  // filter bar HTML
   const filterBar=cols.map(([s,col])=>{
     const cnt=grp[s].length;
     const active=fWHStage===s;
-    const em=s==='จัดส่ง'?'🚚':'📋';
+    const em=s==='จัดส่ง'?'🚚':s==='ใบส่งสินค้าชั่วคราว'?'📄':'📋';
     const activeCss=active?`background:${col};border-color:${col};color:#fff`:'';
     return `<button class="filter-chip ${active?'active':''}" onclick="fWHStage='${s}';render(false)" style="${activeCss}">${em} ${s} (${cnt})</button>`;
   }).join('');
-  const allActive=fWHStage==='ทั้งหมด';
 
   document.getElementById('content').innerHTML=`
   <div class="page-header" style="flex-direction:column;align-items:stretch;gap:10px;margin-bottom:14px">
@@ -2522,9 +2521,8 @@ function vWH(){
         <div class="page-sub">มีเลขเอกสารเปิดบิล (คลัง) แล้ว ${list.filter(o=>o.billDocNo).length} รายการ</div>
       </div>
     </div>
-    <!-- Filter bar — scroll แนวนอนได้ ไม่ถูก clip -->
+    <!-- Filter bar -->
     <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px;">
-      <button class="filter-chip ${allActive?'active':''}" onclick="fWHStage='ทั้งหมด';render(false)">ทั้งหมด (${list.length})</button>
       ${filterBar}
     </div>
   </div>
@@ -2573,7 +2571,7 @@ function vWH(){
 function _renderWHCards(grp, activeCols){
   const el=document.getElementById('wh-mobile-list');
   if(!el)return;
-  const colColors={'เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่ง':'var(--green)'};
+  const colColors={'ใบส่งสินค้าชั่วคราว':'var(--amber)','เปิดบิล/เตรียมของแล้ว':'var(--blue)','จัดส่ง':'var(--green)'};
   const stageFullName={'เปิดบิล':'เปิดบิลแล้ว','เตรียมของ':'เตรียมของแล้ว','จัดส่ง':'จัดส่งแล้ว'};
   let html='';
   activeCols.forEach(function([s,col]){
