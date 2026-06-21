@@ -1272,7 +1272,7 @@ const USERS={
 };
 const LOGIN_PASS='insorder2026';
 const ROLES={staff:{label:'INS Staff',name:'ins.team'}};  // compat
-let role=null,fAccSale='ทั้งหมด',fWHStage='ทั้งหมด',userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
+let role=null,fAcctSale='ทั้งหมด',fAccSale='ทั้งหมด',fWHStage='ทั้งหมด',userEmail='',userName='',view='dashboard',sq='',fSale='ทั้งหมด',fPay='ทั้งหมด',draft=null,prodSq='',fSOStatus='ทั้งหมด',fSOSale='ทั้งหมด';
 let pendingOrders=new Set(); // No. ที่สร้างใหม่ยังรอ save ไป Sheet
 
 // ── DELETED NOs (localStorage) ────────────────
@@ -1497,6 +1497,7 @@ function renderShell(){
     {k:'new-order',l:'สร้างออเดอร์',i:'plus'},
     {k:'so-manage',l:'จัดการ SO',i:'doc',badge:ordersLoaded?(pending||''):'…'},
     {k:'warehouse',l:'สถานะคลัง',i:'warehouse'},
+    {k:'schedule',l:'ตารางส่งสินค้า',i:'truck'},
     {k:'products',l:'รายการสินค้า',i:'box'},
     {k:'accounting',l:'บัญชี',i:'doc'},
   ];
@@ -1542,8 +1543,8 @@ function nav(v){
 function handleSearch(q){sq=q.toLowerCase();if(['orders','so-manage','warehouse','products'].includes(view))render(false);}
 function render(sc=true){
   if(sc)document.getElementById('content').scrollTop=0;
-  document.getElementById('topbar-title').textContent={orders:'รายการออเดอร์','new-order':'สร้างออเดอร์',products:'รายการสินค้า','so-manage':'จัดการ SO',warehouse:'สถานะคลัง',accounting:'บัญชี'}[view]||'';
-  ({orders:vOrders,accounting:vAccounting,'new-order':vNew,products:vProds,'so-manage':vSO,warehouse:vWH}[view]||vOrders)();
+  document.getElementById('topbar-title').textContent={orders:'รายการออเดอร์','new-order':'สร้างออเดอร์',products:'รายการสินค้า','so-manage':'จัดการ SO',warehouse:'สถานะคลัง',accounting:'บัญชี',schedule:'ตารางส่งสินค้า'}[view]||'';
+  ({orders:vOrders,accounting:vAccounting,schedule:vSchedule,'new-order':vNew,products:vProds,'so-manage':vSO,warehouse:vWH}[view]||vOrders)();
 }
 
 // ── VIEWS ─────────────────────────────────────
@@ -2969,6 +2970,84 @@ async function confirmShipDate(){
 
 // ── SYNC ──────────────────────────────────────
 function vAccounting(){
+  const payTypes=['เงินสด ชำระแล้ว','เงินสด ยังไม่ชำระ','เครดิต'];
+  const payColors={'เงินสด ชำระแล้ว':'var(--green)','เงินสด ยังไม่ชำระ':'var(--amber)','เครดิต':'var(--blue)'};
+  const payBg={'เงินสด ชำระแล้ว':'#F0FDF4','เงินสด ยังไม่ชำระ':'#FFFBEB','เครดิต':'#EFF6FF'};
+
+  // filter
+  let list=ORDERS.slice();
+  if(fAcctSale!=='ทั้งหมด') list=list.filter(o=>o.sale===fAcctSale);
+
+  // group by pay
+  const grp={};
+  payTypes.forEach(p=>grp[p]=[]);
+  list.forEach(o=>{
+    const key=payTypes.includes(o.pay)?o.pay:'เงินสด ยังไม่ชำระ';
+    grp[key].push(o);
+  });
+
+  // card สำหรับแต่ละ order
+  const orderCard=o=>{
+    const nm=o.cust.replace(/^[A-Z]\d+ /,'');
+    const total=o.items?Object.values(o.items).reduce((s,i)=>s+(+i.qty||0)*(+i.price||0),0):0;
+    return `<div onclick="showOrder(${o.no})" style="
+      background:#fff;border:1px solid var(--border);border-radius:8px;
+      padding:10px 12px;cursor:pointer;transition:box-shadow .12s;margin-bottom:6px;
+    " onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:monospace;font-size:13px;font-weight:800;color:var(--green)">No. ${o.no}</span>
+        <span class="sale-badge sale-${(o.sale||'').toLowerCase()}">${o.sale}</span>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${nm}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--text3)">${toShortDate(o.date)}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--green)">฿${fmt(total)}</span>
+      </div>
+    </div>`;
+  };
+
+  // 3 column kanban
+  const cols=payTypes.map(p=>`
+    <div style="flex:1;min-width:220px">
+      <div style="
+        background:${payColors[p]};color:#fff;
+        border-radius:8px 8px 0 0;padding:10px 14px;
+        display:flex;justify-content:space-between;align-items:center;
+        font-size:13px;font-weight:700;
+      ">
+        <span>${p}</span>
+        <span style="background:rgba(255,255,255,.3);border-radius:99px;padding:1px 10px;font-size:12px">${grp[p].length}</span>
+      </div>
+      <div style="
+        background:${payBg[p]};border:1px solid var(--border);border-top:none;
+        border-radius:0 0 8px 8px;padding:10px;min-height:200px;
+      ">
+        ${grp[p].length===0
+          ?'<div style="text-align:center;padding:24px;color:var(--text3);font-size:12px">ไม่มีรายการ</div>'
+          :grp[p].map(orderCard).join('')}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('content').innerHTML=`
+  <div class="page-header" style="flex-wrap:wrap;gap:10px;align-items:center">
+    <div>
+      <div class="page-title">บัญชี</div>
+      <div class="page-sub">${list.length} รายการ</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--text3)">SALE</span>
+      ${['ทั้งหมด','Golf','Pea','Oil'].map(s=>`<button
+        class="filter-chip ${fAcctSale===s?'active':''}"
+        onclick="fAcctSale='${s}';render(false)"
+      >${s}</button>`).join('')}
+    </div>
+  </div>
+  <div style="display:flex;gap:14px;align-items:flex-start;overflow-x:auto;padding-bottom:8px">
+    ${cols}
+  </div>`;
+}
+
+function vSchedule(){
   const days=['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์'];
   const slots=['08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00'];
 
@@ -3010,23 +3089,20 @@ function vAccounting(){
   const blockColors=['var(--blue)','var(--amber)','var(--green)'];
   const orderBlocks=eligible.map((o,i)=>{
     const col=blockColors[i%blockColors.length];
-    const nm=o.cust.replace(/^[A-Z]\d+ /,'');
     return `<div class="sched-block"
       draggable="true"
       data-ono="${o.no}"
       ondragstart="schedDragStart(event,${o.no})"
       style="
-        border:2px solid ${col};border-radius:6px;padding:6px 10px;
+        border:2px solid ${col};border-radius:8px;padding:8px 12px;
         background:#fff;cursor:grab;user-select:none;
-        font-size:12px;font-weight:700;color:${col};
-        display:flex;align-items:center;justify-content:flex-end;
         box-shadow:0 1px 4px rgba(0,0,0,.08);
         transition:box-shadow .12s;
-        min-width:160px;
+        min-width:180px;max-width:220px;
       "
       onmousedown="this.style.cursor='grabbing'"
       onmouseup="this.style.cursor='grab'"
-    >No. ${o.no} (${nm.length>16?nm.substring(0,14)+'…':nm})</div>`;
+    >${_schedBlockHtml(o.no,'${col}')}</div>`;
   }).join('');
 
   document.getElementById('content').innerHTML=`
@@ -3160,10 +3236,8 @@ function schedDrop(e,di,si){
     data-ono="${ono}"
     ondragstart="schedDragStart(event,${ono})"
     style="
-      border:2px solid ${col};border-radius:6px;padding:6px 10px;
+      border:2px solid ${col};border-radius:8px;padding:8px 10px;
       background:#fff;cursor:grab;
-      font-size:12px;font-weight:700;color:${col};
-      display:flex;align-items:center;justify-content:flex-end;
       box-shadow:0 2px 6px rgba(0,0,0,.12);
       margin-top:${offsets[stackIdx]}px;
       margin-left:${offsets[stackIdx]}px;
@@ -3172,7 +3246,7 @@ function schedDrop(e,di,si){
     onmouseup="this.style.cursor='grab'"
     ondblclick="schedRemove(event,${ono})"
     title="ดับเบิลคลิกเพื่อนำออก"
-  >No. ${ono} (${nm.length>14?nm.substring(0,12)+'…':nm})</div>`;
+  >${_schedBlockHtml(ono,'${col}')}</div>`;
   cell.appendChild(wrapper);
 
   // reset cell style
@@ -3203,8 +3277,8 @@ function schedDropPool(e){
   el.draggable=true;
   el.dataset.ono=ono;
   el.setAttribute('ondragstart','schedDragStart(event,'+ono+')');
-  el.style.cssText='border:2px solid '+col+';border-radius:6px;padding:6px 10px;background:#fff;cursor:grab;font-size:12px;font-weight:700;color:'+col+';display:flex;align-items:center;justify-content:flex-end;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:160px;';
-  el.innerHTML='No. '+ono+' ('+( nm.length>16?nm.substring(0,14)+'…':nm)+')';
+  el.style.cssText='border:2px solid '+col+';border-radius:8px;padding:8px 12px;background:#fff;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:180px;max-width:220px;';
+  el.innerHTML=_schedBlockHtml(ono,col);
   el.setAttribute('onmousedown',"this.style.cursor='grabbing'");
   el.setAttribute('onmouseup',"this.style.cursor='grab'");
 
@@ -3232,8 +3306,8 @@ function schedRemove(e,ono){
   const el=document.createElement('div');
   el.className='sched-block';el.draggable=true;el.dataset.ono=ono;
   el.setAttribute('ondragstart','schedDragStart(event,'+ono+')');
-  el.style.cssText='border:2px solid '+col+';border-radius:6px;padding:6px 10px;background:#fff;cursor:grab;font-size:12px;font-weight:700;color:'+col+';display:flex;align-items:center;justify-content:flex-end;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:160px;';
-  el.innerHTML='No. '+ono+' ('+(nm.length>16?nm.substring(0,14)+'…':nm)+')';
+  el.style.cssText='border:2px solid '+col+';border-radius:8px;padding:8px 12px;background:#fff;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:180px;max-width:220px;';
+  el.innerHTML=_schedBlockHtml(ono,col);
   el.setAttribute('onmousedown',"this.style.cursor='grabbing'");
   el.setAttribute('onmouseup',"this.style.cursor='grab'");
   pool.appendChild(el);
