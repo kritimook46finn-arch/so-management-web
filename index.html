@@ -3047,124 +3047,285 @@ function vAccounting(){
   </div>`;
 }
 
+
+// ── SCHEDULE BLOCK HELPER ─────────────────────
+function _schedBlockHtml(ono, col){
+  const o=ORDERS.find(x=>x.no===ono);
+  if(!o) return 'No. '+ono;
+  const nm=o.cust.replace(/^[A-Z]\d+ /,'');
+  const items=Array.isArray(o.items)?o.items:Object.values(o.items||{});
+  const itemStr=items.map(i=>(i.name||'').replace(/^\d{9}\s*/,'').trim()).filter(Boolean).join(', ');
+  const note=(o.note||'').replace(/^(ลูกค้าใหม่\s*\|\s*)/,'').trim();
+  return '<div style="font-size:11px;font-weight:800;color:'+col+';margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No. '+ono+'</div>'
+    +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nm+'</div>'
+    +(itemStr?'<div style="font-size:11px;color:var(--text2);margin-bottom:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+itemStr+'</div>':'')
+    +(note?'<div style="font-size:10px;color:var(--text3);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 '+note+'</div>':'');
+}
+
 function vSchedule(){
   const days=['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์'];
-  const slots=['08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00',
-               '13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00'];
-  const bColors=['var(--blue)','var(--amber)','var(--green)'];
-  const el=document.getElementById('content');
-  if(!el)return;
-  el.innerHTML='';
-
-  // ── Header ────────────────────────────────
-  const hdr=document.createElement('div');
-  hdr.className='page-header';
-  hdr.style.cssText='flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px';
-  const titleDiv=document.createElement('div');
-  titleDiv.innerHTML='<div class="page-title">ตารางส่งสินค้า</div><div class="page-sub">ตารางเวลาจัดส่ง จันทร์–ศุกร์</div>';
-  hdr.appendChild(titleDiv);
-  const filterDiv=document.createElement('div');
-  filterDiv.style.cssText='display:flex;align-items:center;gap:6px;flex-wrap:wrap';
-  const lbl=document.createElement('span');
-  lbl.style.cssText='font-size:12px;font-weight:700;color:var(--text3)';
-  lbl.textContent='SALE';
-  filterDiv.appendChild(lbl);
-  ['ทั้งหมด','Golf','Pea','Oil'].forEach(function(s){
-    const btn=document.createElement('button');
-    btn.className='filter-chip'+(fAccSale===s?' active':'');
-    btn.textContent=s;
-    btn.onclick=function(){fAccSale=s;render(false);};
-    filterDiv.appendChild(btn);
-  });
-  hdr.appendChild(filterDiv);
-  el.appendChild(hdr);
-
-  // ── Table ─────────────────────────────────
-  const wrap=document.createElement('div');
-  wrap.style.cssText='overflow-x:auto;border-radius:var(--r);box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:24px';
-  const tbl=document.createElement('table');
-  tbl.id='sched-table';
-  tbl.style.cssText='border-collapse:collapse;min-width:900px;width:100%';
+  const slots=['08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00'];
 
   // thead
-  const thead=tbl.createTHead();
-  const hrow=thead.insertRow();
-  // corner cell
-  const corner=document.createElement('th');
-  corner.style.cssText='background:var(--green);color:#fff;border:1px solid var(--green-dark);position:sticky;left:0;z-index:2;min-width:70px;width:70px;height:48px;padding:0;overflow:hidden';
-  corner.innerHTML='<div style="position:relative;width:70px;height:48px">'
-    +'<svg width="70" height="48" style="position:absolute;top:0;left:0"><line x1="0" y1="0" x2="70" y2="48" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/></svg>'
-    +'<span style="position:absolute;top:5px;right:7px;font-size:11px;font-weight:700">เวลา</span>'
-    +'<span style="position:absolute;bottom:5px;left:7px;font-size:11px;font-weight:700">วัน</span>'
-    +'</div>';
-  hrow.appendChild(corner);
-  slots.forEach(function(s){
-    const th=document.createElement('th');
-    th.style.cssText='background:var(--green);color:#fff;font-size:12px;font-weight:700;padding:8px 6px;text-align:center;white-space:nowrap;border:1px solid var(--green-dark)';
-    th.textContent=s;
-    hrow.appendChild(th);
-  });
+  const headCols=slots.map(s=>`<th style="
+    background:var(--green);color:#fff;
+    font-size:12px;font-weight:700;
+    padding:8px 6px;text-align:center;
+    white-space:nowrap;border:1px solid var(--green-dark)
+  ">${s}</th>`).join('');
 
   // tbody
-  const tbody=tbl.createTBody();
-  days.forEach(function(day,di){
-    const tr=tbody.insertRow();
-    tr.dataset.day=di;
-    const dayTd=document.createElement('td');
-    dayTd.style.cssText='background:var(--green-soft);font-size:12px;font-weight:700;color:var(--green-dark);padding:8px 10px;text-align:center;vertical-align:top;border:1px solid var(--border);white-space:nowrap;position:sticky;left:0;z-index:1;min-width:70px;width:70px';
-    dayTd.textContent=day;
-    tr.appendChild(dayTd);
-    slots.forEach(function(_,si){
-      const td=tr.insertCell();
-      td.className='sched-cell';
-      td.dataset.day=di;
-      td.dataset.slot=si;
-      td.style.cssText='border:1px solid var(--border);min-width:110px;height:90px;vertical-align:top;padding:4px;background:#fff;position:relative';
-      td.addEventListener('dragover',function(e){schedDragOver(e);});
-      td.addEventListener('dragleave',function(e){schedDragLeave(e);});
-      td.addEventListener('drop',function(e){schedDrop(e,di,si);});
-    });
+  const rows=days.map((day,di)=>`<tr data-day="${di}">
+    <td style="
+      background:var(--green-soft);
+      font-size:12px;font-weight:700;color:var(--green-dark);
+      padding:8px 10px;text-align:center;vertical-align:top;
+      border:1px solid var(--border);white-space:nowrap;
+      position:sticky;left:0;z-index:1;min-width:70px;width:70px
+    ">${day}</td>
+    ${slots.map((_,si)=>`<td class="sched-cell"
+      data-day="${di}" data-slot="${si}"
+      style="border:1px solid var(--border);min-width:110px;height:90px;vertical-align:top;padding:4px;background:#fff;position:relative;"
+      ondragover="schedDragOver(event)"
+      ondragleave="schedDragLeave(event)"
+      ondrop="schedDrop(event,${di},${si})"
+    ></td>`).join('')}
+  </tr>`).join('');
+
+  // หา order blocks ที่ผ่านเงื่อนไข:
+  // ขนส่ง = Lalamove หรือ Flash และ pipeline ครบทุกสถานะ
+  let eligible=ORDERS.filter(o=>{
+    const shipOk=o.shipper==='Lalamove'||o.shipper==='Flash';
+    const pipeOk=o.wStage==='จัดส่งแล้ว';
+    return shipOk&&pipeOk;
   });
-  wrap.appendChild(tbl);
-  el.appendChild(wrap);
+  if(fAccSale!=='ทั้งหมด') eligible=eligible.filter(o=>o.sale===fAccSale);
 
-  // ── Pool ──────────────────────────────────
-  let eligible=ORDERS.filter(function(o){
-    return (o.shipper==='Lalamove'||o.shipper==='Flash')&&o.wStage==='จัดส่งแล้ว';
-  });
-  if(fAccSale!=='ทั้งหมด') eligible=eligible.filter(function(o){return o.sale===fAccSale;});
+  const blockColors=['var(--blue)','var(--amber)','var(--green)'];
+  const orderBlocks=eligible.map((o,i)=>{
+    const col=blockColors[i%blockColors.length];
+    return `<div class="sched-block"
+      draggable="true"
+      data-ono="${o.no}"
+      ondragstart="schedDragStart(event,${o.no})"
+      style="
+        border:2px solid ${col};border-radius:8px;padding:8px 12px;
+        background:#fff;cursor:grab;user-select:none;
+        box-shadow:0 1px 4px rgba(0,0,0,.08);
+        min-width:180px;max-width:220px;
+      "
+    >${_schedBlockHtml(o.no,'${col}')}</div>`;
+  }).join('');
 
-  const poolLabel=document.createElement('div');
-  poolLabel.style.cssText='margin-bottom:8px;font-size:12px;font-weight:700;color:var(--text2)';
-  poolLabel.textContent='รายการออเดอร์พร้อมจัดส่ง ('+eligible.length+' รายการ) — คลิกค้างแล้วลากใส่ตาราง';
-  el.appendChild(poolLabel);
+  document.getElementById('content').innerHTML=`
+  <div class="page-header" style="flex-wrap:wrap;gap:10px;align-items:center">
+    <div>
+      <div class="page-title">ตารางส่งสินค้า</div>
+      <div class="page-sub">ตารางเวลาจัดส่ง จันทร์–ศุกร์</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--text3)">SALE</span>
+      ${['ทั้งหมด','Golf','Pea','Oil'].map(s=>`<button
+        class="filter-chip ${fAccSale===s?'active':''}"
+        onclick="fAccSale='${s}';render(false)"
+      >${s}</button>`).join('')}
+    </div>
+  </div>
 
-  const pool=document.createElement('div');
-  pool.id='sched-pool';
-  pool.style.cssText='display:flex;flex-wrap:wrap;gap:10px;min-height:60px;padding:12px;background:var(--bg);border:2px dashed var(--border2);border-radius:var(--r)';
-  pool.addEventListener('dragover',function(e){schedDragOver(e);});
-  pool.addEventListener('dragleave',function(e){schedDragLeave(e);});
-  pool.addEventListener('drop',function(e){schedDropPool(e);});
-  if(!eligible.length){
-    const empty=document.createElement('div');
-    empty.style.cssText='color:var(--text3);font-size:12px;padding:8px';
-    empty.textContent='ยังไม่มีออเดอร์ที่ผ่านเงื่อนไข';
-    pool.appendChild(empty);
-  } else {
-    eligible.forEach(function(o,i){
-      const col=bColors[i%bColors.length];
-      const blk=document.createElement('div');
-      blk.className='sched-block';
-      blk.draggable=true;
-      blk.dataset.ono=o.no;
-      blk.style.cssText='border:2px solid '+col+';border-radius:8px;padding:8px 12px;background:#fff;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:180px;max-width:220px';
-      blk.innerHTML=_schedBlockHtml(o.no,col);
-      blk.addEventListener('dragstart',function(e){schedDragStart(e,o.no);});
-      pool.appendChild(blk);
-    });
-  }
-  el.appendChild(pool);
+  <!-- ตาราง -->
+  <div style="overflow-x:auto;overflow-y:auto;border-radius:var(--r);box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:24px">
+    <table id="sched-table" style="border-collapse:collapse;min-width:900px;width:100%">
+      <thead>
+        <tr>
+          <th style="
+            background:var(--green);color:#fff;
+            border:1px solid var(--green-dark);
+            position:sticky;left:0;z-index:2;
+            min-width:70px;width:70px;height:48px;
+            padding:0;overflow:hidden;
+          ">
+            <div style="position:relative;width:70px;height:48px">
+              <svg width="70" height="48" style="position:absolute;top:0;left:0">
+                <line x1="0" y1="0" x2="70" y2="48" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+              </svg>
+              <span style="position:absolute;top:5px;right:7px;font-size:11px;font-weight:700;line-height:1">เวลา</span>
+              <span style="position:absolute;bottom:5px;left:7px;font-size:11px;font-weight:700;line-height:1">วัน</span>
+            </div>
+          </th>
+          ${headCols}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>
+
+  <!-- Order blocks รอลาก -->
+  <div style="margin-bottom:8px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">
+      รายการออเดอร์พร้อมจัดส่ง (${eligible.length} รายการ) — คลิกค้างแล้วลากใส่ตาราง
+    </div>
+    <div id="sched-pool" style="
+      display:flex;flex-wrap:wrap;gap:10px;
+      min-height:60px;padding:12px;
+      background:var(--bg);border:2px dashed var(--border2);border-radius:var(--r);
+    "
+      ondragover="schedDragOver(event)"
+      ondragleave="schedDragLeave(event)"
+      ondrop="schedDropPool(event)"
+    >
+      ${orderBlocks.length?orderBlocks:'<div style="color:var(--text3);font-size:12px;padding:8px">ยังไม่มีออเดอร์ที่ผ่านเงื่อนไข</div>'}
+    </div>
+  </div>`;
+
+  // init drag state
   window._schedDrag=null;
+  window._schedData=window._schedData||{};
+}
+
+// ── SCHEDULE DRAG & DROP ─────────────────────
+function schedDragStart(e,ono){
+  window._schedDrag=ono;
+  e.dataTransfer.effectAllowed='move';
+  e.target.style.opacity='0.5';
+}
+
+function schedDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  const cell=e.currentTarget;
+  const current=cell.querySelectorAll('.sched-placed');
+  if(current.length<3){
+    cell.style.background='var(--green-soft)';
+    cell.style.border='2px solid var(--green)';
+  } else {
+    cell.style.background='#FEE2E2';
+  }
+}
+
+function schedDragLeave(e){
+  const cell=e.currentTarget;
+  const isCell=cell.classList.contains('sched-cell');
+  cell.style.background=isCell?'#fff':'var(--bg)';
+  cell.style.border=isCell?'1px solid var(--border)':'2px dashed var(--border2)';
+}
+
+function schedDrop(e,di,si){
+  e.preventDefault();
+  const cell=e.currentTarget;
+  const ono=window._schedDrag;
+  if(!ono)return;
+
+  const current=cell.querySelectorAll('.sched-placed');
+  if(current.length>=3){
+    cell.style.background='#fff';
+    cell.style.border='1px solid var(--border)';
+    toast('ไม่สามารถเพิ่มได้ — เต็ม 3 รายการ/ช่อง','err');
+    const srcEl=document.querySelector('[data-ono="'+ono+'"]');
+    if(srcEl)srcEl.style.opacity='1';
+    window._schedDrag=null;
+    return;
+  }
+
+  // ลบออกจากที่เดิม
+  const srcEl=document.querySelector('[data-ono="'+ono+'"]');
+  if(srcEl){srcEl.style.opacity='1';srcEl.remove();}
+
+  // หาสี border จาก order
+  const o=ORDERS.find(x=>x.no===ono);
+  const blockColors=['var(--blue)','var(--amber)','var(--green)'];
+  const colIdx=ORDERS.filter(x=>x.shipper==='Lalamove'||x.shipper==='Flash').findIndex(x=>x.no===ono);
+  const col=blockColors[(colIdx>=0?colIdx:0)%blockColors.length];
+  const nm=o?o.cust.replace(/^[A-Z]\d+ /,''):ono;
+
+  // เพิ่ม block ใน cell — stack offset
+  const stackIdx=current.length;
+  const offsets=[0,3,6];
+  const wrapper=document.createElement('div');
+  wrapper.className='sched-placed';
+  wrapper.style.cssText='position:relative;margin-bottom:'+(stackIdx>0?'-70px':'4px')+';z-index:'+(10+stackIdx)+';';
+  wrapper.innerHTML=`<div class="sched-block"
+    draggable="true"
+    data-ono="${ono}"
+    ondragstart="schedDragStart(event,${ono})"
+    style="
+      border:2px solid ${col};border-radius:6px;padding:6px 10px;
+      background:#fff;cursor:grab;
+      font-size:12px;font-weight:700;color:${col};
+      display:flex;align-items:center;justify-content:flex-end;
+      box-shadow:0 2px 6px rgba(0,0,0,.12);
+      margin-top:${offsets[stackIdx]}px;
+      margin-left:${offsets[stackIdx]}px;
+    "
+    onmousedown="this.style.cursor='grabbing'"
+    onmouseup="this.style.cursor='grab'"
+    ondblclick="schedRemove(event,${ono})"
+    title="ดับเบิลคลิกเพื่อนำออก"
+  >No. ${ono} (${nm.length>14?nm.substring(0,12)+'…':nm})</div>`;
+  cell.appendChild(wrapper);
+
+  // reset cell style
+  cell.style.background='#fff';
+  cell.style.border='1px solid var(--border)';
+  window._schedDrag=null;
+}
+
+function schedDropPool(e){
+  e.preventDefault();
+  const pool=document.getElementById('sched-pool');
+  if(!pool)return;
+  const ono=window._schedDrag;
+  if(!ono)return;
+  // ลบออกจาก cell
+  const srcEl=document.querySelector('[data-ono="'+ono+'"]');
+  if(srcEl){srcEl.style.opacity='1';srcEl.closest('.sched-placed')?.remove()||srcEl.remove();}
+
+  // หา order
+  const o=ORDERS.find(x=>x.no===ono);
+  const blockColors=['var(--blue)','var(--amber)','var(--green)'];
+  const colIdx=ORDERS.filter(x=>x.shipper==='Lalamove'||x.shipper==='Flash').findIndex(x=>x.no===ono);
+  const col=blockColors[(colIdx>=0?colIdx:0)%blockColors.length];
+  const nm=o?o.cust.replace(/^[A-Z]\d+ /,''):ono;
+
+  const el=document.createElement('div');
+  el.className='sched-block';
+  el.draggable=true;
+  el.dataset.ono=ono;
+  el.setAttribute('ondragstart','schedDragStart(event,'+ono+')');
+  el.style.cssText='border:2px solid '+col+';border-radius:6px;padding:6px 10px;background:#fff;cursor:grab;font-size:12px;font-weight:700;color:'+col+';display:flex;align-items:center;justify-content:flex-end;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:160px;';
+  el.innerHTML='No. '+ono+' ('+( nm.length>16?nm.substring(0,14)+'…':nm)+')';
+  el.setAttribute('onmousedown',"this.style.cursor='grabbing'");
+  el.setAttribute('onmouseup',"this.style.cursor='grab'");
+
+  // ลบ "ยังไม่มี" placeholder
+  pool.querySelectorAll('div:not(.sched-block)').forEach(d=>{if(d.style.color.includes('text'))d.remove();});
+  pool.appendChild(el);
+
+  pool.style.background='var(--bg)';
+  pool.style.border='2px dashed var(--border2)';
+  window._schedDrag=null;
+}
+
+function schedRemove(e,ono){
+  e.stopPropagation();
+  // นำ block กลับ pool
+  const placed=e.currentTarget.closest('.sched-placed');
+  if(placed)placed.remove();
+  const pool=document.getElementById('sched-pool');
+  if(!pool)return;
+  const o=ORDERS.find(x=>x.no===ono);
+  const blockColors=['var(--blue)','var(--amber)','var(--green)'];
+  const colIdx=ORDERS.filter(x=>x.shipper==='Lalamove'||x.shipper==='Flash').findIndex(x=>x.no===ono);
+  const col=blockColors[(colIdx>=0?colIdx:0)%blockColors.length];
+  const nm=o?o.cust.replace(/^[A-Z]\d+ /,''):ono;
+  const el=document.createElement('div');
+  el.className='sched-block';el.draggable=true;el.dataset.ono=ono;
+  el.setAttribute('ondragstart','schedDragStart(event,'+ono+')');
+  el.style.cssText='border:2px solid '+col+';border-radius:6px;padding:6px 10px;background:#fff;cursor:grab;font-size:12px;font-weight:700;color:'+col+';display:flex;align-items:center;justify-content:flex-end;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:160px;';
+  el.innerHTML='No. '+ono+' ('+(nm.length>16?nm.substring(0,14)+'…':nm)+')';
+  el.setAttribute('onmousedown',"this.style.cursor='grabbing'");
+  el.setAttribute('onmouseup',"this.style.cursor='grab'");
+  pool.appendChild(el);
+  toast('นำ No.'+ono+' กลับแล้ว','ok');
 }
 
 
